@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "moneyos"
+version = "0.2.0"
+description = "Personal finance ledger: transaction import, cleaning, deduplication and summaries."
+requires-python = ">=3.12"
+# Lower bounds are the versions this was tested with; upper bounds stop a
+# future major release from changing behaviour underneath us.
+dependencies = [
+    "fastapi>=0.143,<1",
+    "uvicorn>=0.54,<1",
+    "pydantic>=2.14,<3",
+    "sqlalchemy>=2.1.4,<2.2",
+    "python-multipart>=0.0.32,<1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=9.1,<10", "httpx2>=2.13,<3"]
+
+[project.scripts]
+moneyos = "moneyos.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"moneyos.domain" = ["*.toml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+filterwarnings = ["error"]

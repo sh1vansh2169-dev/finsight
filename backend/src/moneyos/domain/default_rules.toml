@@ -1,0 +1,88 @@
+# Keyword rules for inferring transaction types and categories.
+#
+# Keywords match whole words or phrases in the description, ignoring case
+# and punctuation ("cab" does not match "cabinet"). Rules are tried top to
+# bottom and the first match wins. Anything a rule infers is recorded with
+# basis "rule", so it is always distinguishable from user-confirmed values.
+#
+# Copy this file, edit it, and point MONEYOS_RULES_FILE at the copy to use
+# your own rules.
+
+# ---------------------------------------------------------------- types
+# direction: "debit", "credit" or "any". Keep phrases specific: a bare
+# "transfer" could be lending to a friend, not moving your own money.
+
+[[type_rules]]
+type = "reversal"
+direction = "any"
+keywords = ["reversal", "reversed"]
+
+[[type_rules]]
+type = "transfer"
+direction = "any"
+keywords = [
+    "transfer to credit card",
+    "credit card payment",
+    "card payment",
+    "payment received thank you",
+    "self transfer",
+    "own account transfer",
+]
+
+[[type_rules]]
+type = "refund"
+direction = "credit"
+keywords = ["refund"]
+
+[[type_rules]]
+type = "income"
+direction = "credit"
+keywords = ["salary", "payroll", "bonus", "interest credit", "dividend"]
+
+# ----------------------------------------------------------- categories
+# A debit that matches a spending category is inferred to be an expense.
+
+[[categories]]
+name = "Salary"
+direction = "credit"
+keywords = ["salary", "payroll", "bonus"]
+
+[[categories]]
+name = "Housing"
+direction = "any"
+keywords = ["rent"]
+
+[[categories]]
+name = "Utilities"
+direction = "any"
+keywords = ["electricity", "broadband", "water bill", "gas bill", "mobile recharge"]
+
+[[categories]]
+name = "Groceries"
+direction = "any"
+keywords = ["groceries", "supermarket", "freshmart"]
+
+[[categories]]
+name = "Dining"
+direction = "any"
+keywords = ["restaurant", "cafe", "pizza"]
+
+[[categories]]
+name = "Transport"
+direction = "any"
+keywords = ["metro", "cab", "quickcab", "fuel", "petrol"]
+
+[[categories]]
+name = "Shopping"
+direction = "any"
+keywords = ["shopkart", "store"]
+
+[[categories]]
+name = "Entertainment"
+direction = "any"
+keywords = ["streamflix", "cinema"]
+
+[[categories]]
+name = "Health"
+direction = "any"
+keywords = ["pharmacy", "clinic"]

@@ -1,94 +1,91 @@
 # MoneyOS
 
-Personal finance toolkit. Version 0.1 is the import pipeline: read bank and
-card CSV exports, clean them, remove duplicates, and produce summaries.
+A personal finance ledger that is honest about what it knows. MoneyOS imports
+bank and card statements, cleans and de-duplicates them, keeps a unified
+ledger with provenance for every value, and reports recorded totals. It is
+the foundation for later analytics, forecasting and ML work.
 
-All data in this repository is synthetic. Real statements belong outside the
-repo or under `data/`, which is git-ignored except for `data/synthetic/`.
+> **Status: v0.2, early development.** Not production-ready and not
+> security-reviewed. Use synthetic data unless you understand
+> [SECURITY.md](docs/SECURITY.md).
 
-## Quick start (Windows PowerShell)
+## What works today
+
+All of this is covered by automated tests (173 passing at the last run; see
+[DEVELOPMENT.md](docs/DEVELOPMENT.md) to run them yourself).
+
+| Area | Implemented |
+| --- | --- |
+| CSV import | Column mapping for common layouts (signed amount, debit/credit columns, amount + DR/CR), date/amount/currency/status normalisation, per-row validation with reasons |
+| Import workflow | Preview → commit or discard, import history, file-hash warning on re-import |
+| Duplicates | Exact match by bank reference; occurrence-aware matching otherwise; re-checked at commit time |
+| Ledger | Unified schema, integer minor units, transaction types (expense, income, transfer, refund, lent, borrowed, repayments, reversal, unknown), provenance of every classification |
+| Manual entry & corrections | Cash/manual transactions; user corrections of type and category with an audit trail |
+| Summaries | Recorded inflow/outflow/net, income, expenses, refunds, unclassified money, transfers, by month and category, data-quality warnings |
+| API | FastAPI backend with OpenAPI docs at `/docs` |
+| Data separation | Sample and real data live in separate, stamped databases that refuse to be mixed |
+
+## Not built yet
+
+See the [roadmap](#roadmap). In particular: no mobile app, no dashboard UI,
+no Money Majra, no analytics notebooks, no ML models, no forecasts, no
+payment-app integrations, no LLM assistant. **No ML results exist yet.**
+
+## Quick start (Windows PowerShell, from the repo root)
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
-.\.venv\Scripts\python.exe -m pytest
-.\.venv\Scripts\python.exe -m moneyos sample data\synthetic
-.\.venv\Scripts\python.exe -m moneyos import (Get-ChildItem data\synthetic\*.csv).FullName
+.\.venv\Scripts\python.exe -m pip install -e ".\backend[dev]"
+.\.venv\Scripts\python.exe -m pytest backend          # run the tests
+.\.venv\Scripts\moneyos.exe seed-sample               # load synthetic data into data/sample/
+.\.venv\Scripts\moneyos.exe serve --sample            # http://127.0.0.1:8000/docs
 ```
 
-`import` options: `--account NAME`, `--currency CODE`, `--month-first`,
-`--json`, `--export clean.csv`.
+Other commands:
 
-## Architecture
-
-The core has no third-party dependencies (standard library only). Money is
-`decimal.Decimal` everywhere; floats are never used.
-
-```
-CSV files -> importer -> cleaning -> categorize -> dedupe -> summary -> report / CLI
+```powershell
+.\.venv\Scripts\moneyos.exe import data\synthetic\*.csv   # analyse files, save nothing
+.\.venv\Scripts\moneyos.exe serve                         # real data in data/moneyos.db
 ```
 
-| Module | Responsibility |
-| --- | --- |
-| `models.py` | `Transaction` (signed amount: positive = money in) and `RejectedRow` |
-| `cleaning.py` | Parse amounts and dates, normalise descriptions. Ambiguous values are rejected, not guessed |
-| `importer.py` | Map each bank's column names and debit/credit layout onto `Transaction`; collect rejected rows with reasons |
-| `categorize.py` | Keyword rules, first match wins |
-| `dedupe.py` | Remove re-imported rows across overlapping files; flag identical rows within one file |
-| `summary.py` | Income, expenses, net, by month, by category, largest expenses, per currency |
-| `pipeline.py` | Runs the stages in order and returns one `PipelineResult` |
-| `report.py`, `cli.py` | Text report, JSON, cleaned CSV export |
-| `synthetic.py` | Seeded synthetic statements plus the expected outcome, used by the end-to-end tests |
+## Repository layout
 
-### Behaviour worth knowing
+```
+backend/        Python package (FastAPI, SQLAlchemy) and its tests
+  src/moneyos/
+    domain/     pure financial logic: parsing, classification, dedupe, summaries
+    db/         database schema and session setup
+    services/   domain logic applied to the database (imports, ledger)
+    api/        HTTP layer
+  tests/
+data/synthetic/ generated sample statements (the only data that is committed)
+docs/           architecture, data dictionary, security, research and ML notes
+mobile/         (planned) Flutter app
+```
 
-- **Duplicates.** A row with a bank reference is identified by account +
-  reference. Otherwise by account, date, amount, currency and normalised
-  description, plus its occurrence number within the file. So two identical
-  coffees in one export are both kept (and listed for review), while the
-  same two coffees in a later overlapping export are both dropped.
-- **Account names matter for de-duplication.** If a file has no account
-  column, the account defaults to the file name. Two exports of the same
-  account under different file names will not be de-duplicated against each
-  other unless you pass `--account`.
-- **Dates.** `03/04/2026` is read as 3 April unless `--month-first` is
-  given. There is no per-row fallback to the other order.
-- **Transfers** are excluded from income and expenses and reported separately.
-- **Refunds** count as income; they do not reduce the category's spend.
-- **Currencies** are summarised separately and never added together.
+## Documentation
 
-### Known limits
-
-- Decimal-comma amounts (`1.234,56`) are rejected.
-- No fuzzy matching: a pending and a posted copy of one transaction with
-  different dates or descriptions is only caught when both carry the same
-  reference.
-- A file where some rows have references and a later export of the same rows
-  has none will not be matched.
-- Categorisation is a small hard-coded keyword list.
-- Nothing is stored; every run starts from the CSV files.
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md): how the system fits together and why
+- [DATA_DICTIONARY.md](docs/DATA_DICTIONARY.md): every table, field and enum
+- [DEVELOPMENT.md](docs/DEVELOPMENT.md): setup, commands, workflow
+- [SECURITY.md](docs/SECURITY.md): threat model and current limitations
+- [ML_EXPERIMENTS.md](docs/ML_EXPERIMENTS.md): experiment log (empty so far)
+- [RESEARCH_NOTES.md](docs/RESEARCH_NOTES.md): the research question and plan
 
 ## Roadmap
 
-1. **Import pipeline (this version).** CSV import, cleaning, duplicate
-   detection, summaries, CLI, tests.
-2. **Storage.** SQLite via the standard library `sqlite3`: accounts,
-   transactions, import batches. `deduplicate(existing=...)` already accepts
-   previously stored transactions, so re-imports become incremental.
-3. **Rules and review.** User-editable category rules in a config file,
-   a review step for suspected duplicates and rejected rows, refund and
-   transfer pairing across accounts, pending/posted fuzzy matching.
-4. **Budgets and reporting.** Monthly budgets per category, recurring
-   payment detection, trends.
-5. **Interface.** A local API (FastAPI) and web UI (Node is installed), or
-   a simpler Streamlit dashboard. Decide once phases 2-4 settle the data
-   model.
-6. **More formats.** OFX/QIF, Excel, PDF statements.
+| Phase | Scope | Status |
+| --- | --- | --- |
+| 1 | Foundation and data schema | **Done** |
+| 2 | CSV import and manual entry | **Done** (CSV formats beyond the supported layouts: planned) |
+| 3 | Normalisation, deduplication, ledger | **Partly done**: exact/occurrence dedupe done; explainable fuzzy candidate matching with review queue not started |
+| 4 | Dashboard and descriptive analytics (Pandas) | Not started |
+| 5 | Money Majra (shared expenses, lending) | Not started; transaction types already exist |
+| 6 | Forecasting baselines and ML experiments | Not started |
+| 7 | Financial digital twin | Not started |
+| 8 | Mobile app (Flutter) and API integration | Blocked on local setup: Flutter is downloaded, but not on PATH and has no Android SDK |
+| 9 | Authorised source integrations | Not started; research first |
+| 10 | Optional LLM assistant | Not started |
+| 11 | Hardening, security review, release | Not started |
 
-## Tooling gaps on this machine
-
-- **git is not installed**, so the project is not under version control.
-  Install Git for Windows, then run `git init` here.
-- Python 3.14 had only `pip`; `pytest` is installed in `.venv`. `ruff`
-  exists only in the Anaconda install and is not wired up yet.
-- No Docker (not needed so far).
+All data in this repository is synthetic. Never commit real statements.
