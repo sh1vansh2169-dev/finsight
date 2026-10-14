@@ -21,9 +21,9 @@ the forecasting code.
 
 | Layer | Responsibility | Key files |
 | --- | --- | --- |
-| `domain` | Parse, validate, classify, de-duplicate, summarise | `importer.py`, `cleaning.py`, `classify.py`, `dedupe.py`, `summary.py`, `models.py`, `money.py` |
-| `db` | Schema, engine, data-mode guard | `tables.py`, `session.py` |
-| `services` | Workflows that combine domain logic with storage | `imports.py`, `ledger.py`, `mapping.py` |
+| `domain` | Parse, validate, classify, de-duplicate, match, summarise | `importer.py`, `cleaning.py`, `classify.py`, `dedupe.py`, `matching.py`, `summary.py`, `models.py`, `money.py` |
+| `db` | Schema, migrations, engine, data-mode guard | `tables.py`, `session.py`, `migrations/` |
+| `services` | Workflows that combine domain logic with storage | `imports.py`, `ledger.py`, `review.py`, `mapping.py` |
 | `api` | Validation (Pydantic), auth, HTTP status mapping | `app.py`, `routes.py`, `schemas.py`, `deps.py` |
 
 ## Key decisions
@@ -60,12 +60,46 @@ not rules: a UPI "transfer" to a friend may be a loan.
    are both kept and flagged for review; the same two coffees in a later
    overlapping export are both dropped; a third would be kept.
 
-**Why not fuzzy matching yet.** Matching on approximate dates or
-descriptions needs a review queue and confidence thresholds, or it will
-silently delete real transactions. That is Phase 3 follow-up work.
 **Limit.** A file without an account column defaults its account to the
 file name, so two exports of the same account under different names are not
 de-duplicated against each other unless the account is specified.
+
+### Near-duplicates go to a review queue, never auto-merged
+**Problem.** The same payment often reaches MoneyOS twice with different
+details: a payment app's export and the bank statement of the linked
+account ("Spice Route" on the 9th vs "UPI/SPICE ROUTE RESTAURANT/4471" on
+the 10th), or a cash entry later seen on a statement. Exact rules cannot
+see these, and guessing wrong silently deletes real money.
+**Choice.** `domain/matching.py` proposes pairs. A pair must pass hard
+gates (same currency, amount and direction; dates at most 3 days apart;
+neither payment failed; no conflicting bank references on one account).
+It is then scored 0–100: 30% date closeness, 55% description similarity
+(token containment or fuzzy match after dropping rail words like "UPI"),
+15% same account. Pairs scoring 60 or more are stored in
+`match_candidates` with plain-language reasons. The user decides:
+*same payment* (choose which record to keep; the other gets
+`duplicate_of_id` and drops out of listings and totals) or *different
+payments* (never proposed again). Every decision is audited and can be
+undone.
+**Alternatives.** Auto-merging above a threshold (rejected: one wrong merge
+hides real spending, and the scores are not calibrated). A learned
+classifier (premature: there are no labelled decisions yet; the review
+queue is what will create them).
+**Limits.** The weights are hand-chosen. The evaluation so far uses
+synthetic data designed alongside the matcher (see ML_EXPERIMENTS.md, E0), so it shows
+the code behaves as intended, not that the weights suit real data. Amounts
+must match exactly, so a fee-inclusive copy will not be proposed. Summaries
+warn while pairs are open, because totals may double-count until then.
+
+### Database migrations
+The schema is managed by Alembic (`db/migrations/`). On startup, `init_db`
+checks the data mode first (so a wrong-mode database is never touched) and
+then upgrades to the latest revision. A database created by v0.2, before
+migrations existed, is recognised (tables present, no `alembic_version`),
+stamped as the baseline revision `0001`, and upgraded with its data intact.
+A test compares the migrated schema with the models and fails on any
+drift. SQLite needs "batch" migrations (table rebuilds) for most column
+changes; the environment enables them.
 
 ### Two-step imports
 `preview` parses, validates, classifies and checks duplicates, then stages
@@ -87,12 +121,6 @@ and source-reversed ones are counted with a warning; transfers between your
 own accounts are reported separately and excluded from net cash flow.
 Different currencies are never added together.
 
-### Database migrations
-The schema is portable (no SQLite-only types), so it can move to
-PostgreSQL. Tables are currently created with `create_all`, which only adds
-missing tables. **Alembic must be introduced before the first schema change
-that has to preserve existing data.**
-
 ### Synchronous SQLAlchemy in FastAPI
 Route handlers are plain `def` functions, so FastAPI runs them in a thread
 pool. For a single-user local app this is simpler than async drivers, with
@@ -106,11 +134,14 @@ no meaningful cost.
 | Ground truth | A seeded synthetic generator computes expected totals from its own ledger; the pipeline must reproduce them across five seeds | `test_pipeline.py`, `test_services.py`, `test_api.py` |
 | Integration | Real SQLite file: preview/commit, concurrency-style re-checks, constraints, audit trail, data-mode guard | `test_services.py` |
 | HTTP | Status codes, JSON money format, validation, auth | `test_api.py` |
+| Review | Proposals, decisions, undo, supersession, audit, totals before and after review | `test_review.py`, `test_matching.py` |
+| Schema | Migrations equal the models; v0.2 databases upgrade with data intact; downgrade/upgrade | `test_migrations.py` |
 
 Warnings are errors in the test run (`filterwarnings = error`), which caught
-a dependency deprecation and two leaked database connections during
+two dependency deprecations and two leaked database connections during
 development. The tests were also checked by deliberately breaking key logic
-(mutation testing by hand). Each break was caught.
+(mutation testing by hand). One break initially went undetected (the
+matcher's list of ignored payment-rail words), and a test was added for it.
 
 ## Concepts worth learning from this code
 
@@ -120,4 +151,10 @@ development. The tests were also checked by deliberately breaking key logic
 - **Invariants as tests**: "categories sum to expenses", "net equals the sum
   of included signed amounts".
 - **Staging tables**: preview/commit is the same pattern data warehouses use.
+- **Record linkage / entity resolution**: blocking (only compare same-amount
+  pairs), similarity features, thresholds, and human review. This is a whole
+  research field; the matcher here is its simplest useful form.
+- **Precision vs recall trade-offs**: a lower threshold finds more true
+  duplicates but asks the user about more false ones.
+- **Schema migrations**: why `create_all` is not enough once data exists.
 - **Layered architecture**: pure core, thin I/O shells.

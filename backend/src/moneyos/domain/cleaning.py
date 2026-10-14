@@ -27,7 +27,7 @@ _GROUPED_NUMBER = re.compile(r"\d{1,3}(,\d{2,3})*,\d{3}(\.\d+)?")
 
 _ISO_DATE = re.compile(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})")
 _TIME_SUFFIX = re.compile(
-    r"[T\s]+\d{1,2}:\d{2}(:\d{2})?(\.\d+)?\s*(am|pm)?$", re.IGNORECASE
+    r",?[T\s]+\d{1,2}:\d{2}(:\d{2})?(\.\d+)?\s*(am|pm)?$", re.IGNORECASE
 )
 _DAY_FIRST_FORMATS = ("%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y", "%d/%m/%y", "%d-%m-%y")
 _MONTH_FIRST_FORMATS = ("%m/%d/%Y", "%m-%d-%Y", "%m/%d/%y", "%m-%d-%y")

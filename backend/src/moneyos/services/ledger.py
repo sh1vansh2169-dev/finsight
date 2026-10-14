@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from decimal import Decimal
 
@@ -23,6 +23,7 @@ from moneyos.domain.models import (
 )
 from moneyos.domain.money import to_minor
 from moneyos.domain.summary import LedgerSummary, summarize_by_currency
+from moneyos.services import review
 from moneyos.services.errors import InvalidRequestError, NotFoundError
 from moneyos.services.mapping import get_or_create_account, to_domain, to_record
 
@@ -35,9 +36,13 @@ class TransactionFilter:
     currency: str | None = None
     txn_type: TxnType | None = None
     category: str | None = None
+    # Records the user confirmed as duplicates are hidden unless asked for.
+    include_duplicates: bool = False
 
 
 def _filtered(query: Select, f: TransactionFilter) -> Select:
+    if not f.include_duplicates:
+        query = query.where(TransactionRecord.duplicate_of_id.is_(None))
     if f.start:
         query = query.where(TransactionRecord.occurred_on >= f.start)
     if f.end:
@@ -138,6 +143,9 @@ def create_manual(
     record = to_record(t, get_or_create_account(session, account, currency), source="manual")
     session.add(record)
     session.flush()
+    # An exact match is already warned about above; it is queued for review either way.
+    if review.find_new_candidates(session) and not warnings:
+        warnings.append("This may be the same payment as another record; it has been added to the review list.")
     session.add(
         AuditEvent(actor="user", action="transaction_created", entity_type="transaction", entity_id=record.id)
     )
@@ -192,6 +200,8 @@ def audit_trail(session: Session, entity_type: str, entity_id: int) -> list[Audi
 
 
 def summarize_ledger(session: Session, f: TransactionFilter) -> dict[str, LedgerSummary]:
+    """Summaries never include confirmed duplicates, whatever the filter says."""
+    f = replace(f, include_duplicates=False)
     records = session.scalars(
         _filtered(select(TransactionRecord).join(Account), f).options(
             selectinload(TransactionRecord.account)

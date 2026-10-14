@@ -82,7 +82,7 @@ def _cmd_import(args) -> int:
 
 def _cmd_seed_sample(args) -> int:
     from moneyos.db.session import DataModeError, init_db
-    from moneyos.services import imports
+    from moneyos.services import imports, review
 
     try:
         factory = init_db(args.database, DataMode.SAMPLE)
@@ -93,8 +93,12 @@ def _cmd_seed_sample(args) -> int:
     try:
         rules = load_rules(Settings.from_env().rules_file)
         with factory() as session:
-            for name, text in dataset.files.items():
-                account = synthetic.CARD_ACCOUNT if "card" in name else None
+            files = {**dataset.files, dataset.payapp.name: dataset.payapp.text}
+            for name, text in files.items():
+                account = {
+                    dataset.payapp.name: synthetic.PAYAPP_ACCOUNT,
+                    "sample_card_4321_2026_q1.csv": synthetic.CARD_ACCOUNT,
+                }.get(name)
                 batch = imports.preview_import(
                     session,
                     filename=name,
@@ -107,6 +111,7 @@ def _cmd_seed_sample(args) -> int:
                     f"{name}: {batch.inserted_rows} added, {batch.duplicate_rows} duplicates, "
                     f"{batch.rejected_rows} rejected"
                 )
+            print(f"Possible duplicates waiting for review: {review.count_open(session)}")
     finally:
         factory.kw["bind"].dispose()
     print(f"\n{synthetic.SAMPLE_MARKER}\nStored in {args.database}. Serve it with: moneyos serve --sample")

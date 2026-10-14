@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from sqlalchemy.orm import Session
@@ -12,11 +12,14 @@ from moneyos.api.deps import get_rules, get_session, get_settings
 from moneyos.api.schemas import (
     AccountOut,
     AuditEventOut,
+    DuplicateCandidateOut,
+    DuplicateDecisionIn,
     ImportBatchOut,
     ImportDetailOut,
     ImportRowOut,
     ManualTransactionIn,
     ManualTransactionOut,
+    ScanOut,
     SummaryOut,
     TransactionCorrectionIn,
     TransactionOut,
@@ -27,7 +30,7 @@ from moneyos.domain.classify import Rules
 from moneyos.domain.importer import MAX_IMPORT_BYTES
 from moneyos.domain.models import TxnType
 from moneyos.domain.report import summary_dict
-from moneyos.services import imports, ledger
+from moneyos.services import imports, ledger, review
 from moneyos.services.errors import PayloadTooLargeError
 
 router = APIRouter()
@@ -43,6 +46,9 @@ def _batch_out(session: Session, batch) -> ImportBatchOut:
         warnings.append(f"This exact file was already imported (import {ids}).")
     if batch.suspected_rows:
         warnings.append(f"{batch.suspected_rows} row(s) are identical to another row in the file; please review.")
+    if batch.status == "committed":
+        if pending := review.count_open(session, imports.batch_transaction_ids(session, batch.id)):
+            warnings.append(f"{pending} possible duplicate pair(s) involve this import; see the review list.")
     return ImportBatchOut.from_batch(batch, warnings)
 
 
@@ -108,8 +114,9 @@ def _filter(
     currency: str | None = None,
     txn_type: TxnType | None = None,
     category: str | None = None,
+    include_duplicates: bool = False,
 ) -> ledger.TransactionFilter:
-    return ledger.TransactionFilter(start, end, account, currency, txn_type, category)
+    return ledger.TransactionFilter(start, end, account, currency, txn_type, category, include_duplicates)
 
 
 FilterDep = Annotated[ledger.TransactionFilter, Depends(_filter)]
@@ -175,10 +182,55 @@ def transaction_audit(transaction_id: int, session: SessionDep) -> list[AuditEve
 @router.get("/summary", response_model=SummaryOut, tags=["summary"])
 def summary(session: SessionDep, f: FilterDep, settings: SettingsDep) -> SummaryOut:
     summaries = ledger.summarize_ledger(session, f)
+    pending = review.count_open(session)
+    warnings = []
+    if pending:
+        warnings.append(
+            f"{pending} pair(s) of transactions may be the same payment recorded twice. "
+            "Until they are reviewed, these totals may count them twice."
+        )
     return SummaryOut(
         sample_data=settings.data_mode == DataMode.SAMPLE,
+        open_duplicate_reviews=pending,
+        warnings=warnings,
         currencies={currency: summary_dict(s) for currency, s in summaries.items()},
     )
+
+
+# ------------------------------------------------------------ duplicate review
+
+
+@router.get("/review/duplicates", response_model=list[DuplicateCandidateOut], tags=["review"])
+def list_duplicate_candidates(
+    session: SessionDep,
+    status: Annotated[Literal["open", "duplicate", "distinct", "superseded", "all"], Query()] = "open",
+) -> list[DuplicateCandidateOut]:
+    """Pairs that may be the same payment, highest score first."""
+    candidates = review.list_candidates(session, None if status == "all" else status)
+    return [DuplicateCandidateOut.from_candidate(c) for c in candidates]
+
+
+@router.post("/review/duplicates/scan", response_model=ScanOut, tags=["review"])
+def scan_for_duplicates(session: SessionDep) -> ScanOut:
+    """Look for new possible duplicates across the whole ledger."""
+    return ScanOut(new_candidates=review.scan(session))
+
+
+@router.post("/review/duplicates/{candidate_id}/resolve", response_model=DuplicateCandidateOut, tags=["review"])
+def resolve_duplicate_candidate(
+    candidate_id: int, body: DuplicateDecisionIn, session: SessionDep
+) -> DuplicateCandidateOut:
+    """Confirm a pair as one payment (keeping one record) or as two separate payments."""
+    candidate = review.resolve(
+        session, candidate_id, duplicate=body.decision == "duplicate", keep_id=body.keep_transaction_id
+    )
+    return DuplicateCandidateOut.from_candidate(candidate)
+
+
+@router.post("/review/duplicates/{candidate_id}/reopen", response_model=DuplicateCandidateOut, tags=["review"])
+def reopen_duplicate_candidate(candidate_id: int, session: SessionDep) -> DuplicateCandidateOut:
+    """Undo a decision."""
+    return DuplicateCandidateOut.from_candidate(review.reopen(session, candidate_id))
 
 
 @router.get("/accounts", response_model=list[AccountOut], tags=["accounts"])

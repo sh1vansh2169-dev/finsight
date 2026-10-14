@@ -38,7 +38,26 @@ debits; `income`, `refund`, `borrowed`, `repayment_received` are credits;
 | `source` | `csv_import` / `manual` | |
 | `import_batch_id` | int → `import_batches.id`, nullable | Provenance |
 | `source_file`, `source_row` | nullable | Provenance: file name and 1-based line number |
+| `duplicate_of_id` | int → `transactions.id`, nullable | Set when the user confirms this record is the same payment as another. Such records are kept for provenance but hidden from listings (unless `include_duplicates=true`) and always excluded from totals |
 | `created_at`, `updated_at` | UTC datetime | |
+
+## `match_candidates`
+
+Pairs the matcher thinks may be the same payment. Only the user resolves them.
+
+| Column | Notes |
+| --- | --- |
+| `transaction_a_id`, `transaction_b_id` | The pair; `a < b`, unique together |
+| `score` | 0–100 from hand-chosen weights. Not a probability |
+| `reasons` | JSON list of plain-language reasons shown to the user |
+| `status` | `open`, `duplicate` (same payment), `distinct` (different payments, never re-proposed), `superseded` (closed because one record was marked a duplicate in another pair; reopened automatically if that decision is undone) |
+| `kept_id` | For `duplicate`: the record that was kept |
+| `created_at`, `resolved_at` | UTC |
+
+## `alembic_version`
+
+Current schema revision, managed by Alembic. `0001` is the v0.2 schema;
+`0002` adds duplicate review.
 
 ## `accounts`
 
@@ -65,9 +84,11 @@ a preview is discarded.
 
 ## `audit_events`
 
-Append-only. `action` is one of `import_committed`, `import_discarded`,
-`transaction_created`, `transaction_corrected`. Corrections store
-`details.before` and `details.after`.
+Append-only. Actions: `import_committed`, `import_discarded`,
+`transaction_created`, `transaction_corrected` (with `details.before` and
+`details.after`), and for duplicate review `match_marked_duplicate`,
+`match_marked_distinct`, `match_reopened` (on `match_candidate`) plus
+`marked_duplicate` / `unmarked_duplicate` (on the affected `transaction`).
 
 ## `app_meta`
 
@@ -81,12 +102,15 @@ description, and either an amount or debit/credit columns.
 | Field | Accepted headers |
 | --- | --- |
 | date | date, transaction date, txn date, posting date, posted date, value date |
-| description | description, narration, details, memo, payee, particulars, merchant |
+| description | description, narration, details, memo, payee, particulars, merchant, counterparty, paid to / received from |
 | amount | amount, amount (INR), amount (USD), transaction amount |
 | debit / credit | debit, withdrawal, money out, paid out / credit, deposit, money in, paid in |
 | direction | type, dr/cr, cr/dr, debit/credit (values DR, CR, debit, credit) |
 | status | status, transaction status, txn status |
-| others | currency, account, category, reference / ref no / transaction id / UTR |
+| others | currency, account, category, reference / ref no / transaction id / UTR / UPI ref no |
+
+Dates may carry a time of day (`07 Feb 2026, 1:45 PM`, `2026-02-07T13:45`);
+the time is currently discarded.
 
 Amounts may include ₹ $ € £, Rs., INR, Western or Indian digit grouping,
 and negatives as `-`, `(x)`, trailing `-`, or `DR`. Decimal commas

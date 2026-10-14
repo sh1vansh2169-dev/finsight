@@ -1,15 +1,21 @@
-"""Engine creation, schema setup and the real/sample data-mode guard."""
+"""Engine creation, schema migrations and the real/sample data-mode guard."""
 
 from __future__ import annotations
 
+from importlib import resources
 from pathlib import Path
 
-from sqlalchemy import Engine, create_engine, event, func, select
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import Connection, Engine, create_engine, event, func, inspect, select
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 
 from moneyos.config import DataMode
-from moneyos.db.tables import AppMeta, Base, ImportBatch, TransactionRecord
+from moneyos.db.tables import AppMeta, ImportBatch, TransactionRecord
+
+# The schema as v0.2 created it, before migrations existed.
+BASELINE_REVISION = "0001"
 
 
 class DataModeError(RuntimeError):
@@ -30,6 +36,28 @@ def make_engine(database_url: str) -> Engine:
     if url.get_backend_name() == "sqlite":
         event.listen(engine, "connect", _enable_sqlite_foreign_keys)
     return engine
+
+
+def alembic_config(connection: Connection | None = None) -> Config:
+    config = Config()
+    config.set_main_option("script_location", str(resources.files("moneyos.db") / "migrations"))
+    if connection is not None:
+        config.attributes["connection"] = connection
+    return config
+
+
+def migrate(engine: Engine, revision: str = "head") -> None:
+    """Bring the schema up to ``revision``.
+
+    A database created before migrations existed has the baseline tables but
+    no ``alembic_version``; it is stamped as the baseline, then upgraded.
+    """
+    with engine.begin() as connection:
+        tables = set(inspect(connection).get_table_names())
+        config = alembic_config(connection)
+        if "alembic_version" not in tables and "transactions" in tables:
+            command.stamp(config, BASELINE_REVISION)
+        command.upgrade(config, revision)
 
 
 def ensure_data_mode(engine: Engine, mode: DataMode) -> None:
@@ -58,15 +86,20 @@ def ensure_data_mode(engine: Engine, mode: DataMode) -> None:
 
 
 def init_db(database_url: str, mode: DataMode) -> sessionmaker[Session]:
-    """Create tables if needed, check the data mode, return a session factory.
+    """Migrate the schema, check the data mode, return a session factory.
 
-    ``create_all`` only adds missing tables. Once the schema starts changing
-    under existing data, this should be replaced by Alembic migrations.
+    The data mode is checked *before* migrating, so opening a database in
+    the wrong mode never modifies it.
     """
     engine = make_engine(database_url)
     try:
-        Base.metadata.create_all(engine)
-        ensure_data_mode(engine, mode)
+        with engine.connect() as connection:
+            existing = "app_meta" in inspect(connection).get_table_names()
+        if existing:
+            ensure_data_mode(engine, mode)
+        migrate(engine)
+        if not existing:
+            ensure_data_mode(engine, mode)
     except BaseException:
         engine.dispose()
         raise

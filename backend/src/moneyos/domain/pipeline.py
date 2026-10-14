@@ -13,6 +13,7 @@ from pathlib import Path
 from moneyos.domain.classify import Rules, classify, load_rules
 from moneyos.domain.dedupe import deduplicate
 from moneyos.domain.importer import FileImport, import_csv
+from moneyos.domain.matching import MatchScore, find_candidates
 from moneyos.domain.models import RejectedRow, Transaction
 from moneyos.domain.summary import LedgerSummary, summarize_by_currency
 
@@ -25,6 +26,8 @@ class PipelineResult:
     suspected_duplicates: list[Transaction] = field(default_factory=list)
     rejected: list[RejectedRow] = field(default_factory=list)
     summaries: dict[str, LedgerSummary] = field(default_factory=dict)
+    # Possible duplicates the exact rules could not settle. Not removed.
+    candidates: list[tuple[Transaction, Transaction, MatchScore]] = field(default_factory=list)
 
 
 def run_pipeline(
@@ -56,4 +59,8 @@ def run_pipeline(
         suspected_duplicates=deduped.suspected,
         rejected=[r for f in files for r in f.rejected],
         summaries=summarize_by_currency(transactions),
+        candidates=[
+            (transactions[a], transactions[b], score)
+            for a, b, score in find_candidates(list(enumerate(transactions)))
+        ],
     )

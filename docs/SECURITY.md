@@ -17,6 +17,8 @@ store real financial data in it on a shared machine.**
 | Errors | Error responses carry a short message, never a stack trace |
 | Data minimisation | Raw CSV cells are stored only for rejected rows; discarding a preview deletes its staged rows |
 | Sample/real separation | Databases are stamped with their data mode and refuse to be mixed |
+| CSV formula injection | Exported text cells starting with `=`, `+`, `-`, `@`, tab or CR are prefixed with `'` so spreadsheets show them as text; amounts are left untouched |
+| No silent merges | Possible duplicates are never removed automatically; each merge is a user decision, audited and reversible |
 | Repository hygiene | `data/*` and database files are git-ignored except the synthetic samples |
 
 ## Known limitations
@@ -27,9 +29,6 @@ store real financial data in it on a shared machine.**
   access to your user account. Use full-disk encryption (BitLocker).
 - **No TLS.** The server speaks plain HTTP. Over a network, put it behind a
   TLS-terminating proxy, or don't do it.
-- **CSV formula injection.** `export_csv` writes descriptions as-is. A
-  description starting with `=` could execute in Excel. Planned fix: prefix
-  such cells.
 - **Previews linger.** Previewed but never committed or discarded batches
   keep their staged rows.
 - **Dependency vulnerabilities** are not yet scanned (`pip-audit` planned).

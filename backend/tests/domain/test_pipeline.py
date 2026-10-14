@@ -131,8 +131,12 @@ def test_cli_text_report(paths, capsys):
 def test_cli_expands_wildcards(dataset, paths, capsys):
     assert main(["import", str(paths[0].parent / "sample_*.csv"), "--json"]) == 0
     payload = json.loads(capsys.readouterr().out)
-    assert len(payload["files"]) == 3
-    assert len(payload["transactions"]) == dataset.expected.unique_transactions
+    # The three statements plus the payment-app export, which no exact rule
+    # can de-duplicate against the bank (different accounts, no shared IDs).
+    assert len(payload["files"]) == 4
+    app = dataset.payapp
+    app_rows = len(app.mirrored) + app.app_only + app.failed
+    assert len(payload["transactions"]) == dataset.expected.unique_transactions + app_rows
     # A pattern matching nothing is passed through and reported as missing.
     assert main(["import", str(paths[0].parent / "nothing_*.csv")]) == 2
 
@@ -173,3 +177,19 @@ def test_cli_reports_errors_with_exit_code_2(write_csv, tmp_path, capsys):
     assert main(["import", str(tmp_path / "missing.csv")]) == 2
     assert main(["import", str(write_csv("bad.csv", "A,B\n1,2\n"))]) == 2
     assert capsys.readouterr().err.count("error:") == 2
+
+
+def test_export_neutralises_spreadsheet_formulas(write_csv, tmp_path):
+    source = write_csv(
+        "evil.csv",
+        "Date,Description,Amount\n"
+        '05/01/2026,"=HYPERLINK(""http://x"",""click"")",-10.00\n'
+        "06/01/2026,@SUM(A1),-5.00\n"
+        "07/01/2026,Normal shop,-1.00\n",
+    )
+    out = tmp_path / "out.csv"
+    report.export_csv(run_pipeline([source]), out)
+    with out.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert [r["description"] for r in rows] == ['\'=HYPERLINK("http://x","click")', "'@SUM(A1)", "Normal shop"]
+    assert [r["amount"] for r in rows] == ["-10.00", "-5.00", "-1.00"]  # amounts untouched

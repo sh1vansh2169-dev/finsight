@@ -22,6 +22,7 @@ from sqlalchemy import (
     Integer,
     String,
     TypeDecorator,
+    UniqueConstraint,
     text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -165,10 +166,44 @@ class TransactionRecord(Base):
     import_batch_id: Mapped[int | None] = mapped_column(ForeignKey("import_batches.id"))
     source_file: Mapped[str | None] = mapped_column(String(255))
     source_row: Mapped[int | None] = mapped_column(Integer)
+    # Set when the user confirms this record duplicates another. The record
+    # is kept for provenance but excluded from totals and listings.
+    duplicate_of_id: Mapped[int | None] = mapped_column(
+        ForeignKey("transactions.id", name="fk_transactions_duplicate_of")
+    )
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now, onupdate=utc_now)
 
     account: Mapped[Account] = relationship()
+
+
+class MatchCandidate(Base):
+    """A pair of transactions that may be the same real-world payment.
+
+    Created by the matcher, resolved only by the user. ``transaction_a_id``
+    is always the smaller id so each pair is stored once.
+    """
+
+    __tablename__ = "match_candidates"
+    __table_args__ = (
+        CheckConstraint("transaction_a_id < transaction_b_id", name="ck_match_ordered"),
+        CheckConstraint("score BETWEEN 0 AND 100", name="ck_match_score"),
+        CheckConstraint("status IN ('open', 'duplicate', 'distinct', 'superseded')", name="ck_match_status"),
+        UniqueConstraint("transaction_a_id", "transaction_b_id", name="uq_match_pair"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    transaction_a_id: Mapped[int] = mapped_column(ForeignKey("transactions.id"))
+    transaction_b_id: Mapped[int] = mapped_column(ForeignKey("transactions.id"))
+    score: Mapped[int] = mapped_column(Integer)  # 0-100
+    reasons: Mapped[list[str]] = mapped_column(JSON)
+    status: Mapped[str] = mapped_column(String(12), default="open", index=True)
+    kept_id: Mapped[int | None] = mapped_column(ForeignKey("transactions.id"))
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now)
+    resolved_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+
+    transaction_a: Mapped[TransactionRecord] = relationship(foreign_keys=[transaction_a_id])
+    transaction_b: Mapped[TransactionRecord] = relationship(foreign_keys=[transaction_b_id])
 
 
 class AuditEvent(Base):

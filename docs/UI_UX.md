@@ -1,0 +1,73 @@
+# UI/UX requirements
+
+**Status: planned for Phase 8.** Nothing in this document is built yet. The
+backend phases (3–7) come first so every screen has real data behind it.
+Recorded 2026-10-14 from the project owner's brief.
+
+## Character
+
+Friendly, human-centred, for everyday users: approachable, trustworthy,
+calm, easy to understand. Not a complicated banking dashboard and not a
+developer analytics tool.
+
+## Visual direction
+
+- Light-first: warm cream or white background.
+- Sage green primary accent, restrained blue accents.
+- Rounded cards, clear typography, subtle borders, generous spacing.
+- Simple icons, restrained animation.
+- Optional dark theme.
+- Accessible, readable, responsive.
+
+## Navigation
+
+1. Home
+2. Transactions
+3. Money Majra
+4. Insights
+5. Profile
+
+## Screens
+
+| Screen | Content | Backend it depends on |
+| --- | --- | --- |
+| Home | Monthly spending, recorded income, budget progress, recent transactions, one or two useful insights | Summaries (done), budgets (Phase 4) |
+| Transactions | Searchable list, category filters, source filters, import controls, simple category corrections, duplicate review | Ledger, imports, corrections (done); duplicate review (Phase 3) |
+| Money Majra | Lending, borrowing, shared expenses, repayments, settlements, made easy to understand | Phase 5 |
+| Insights | Spending patterns, expenditure forecasts, unusual transactions, budget suggestions, with simple explanations and clear charts | Phases 4, 6 |
+| Assistant | Natural-language questions answered from verified app data, with uncertainty shown for predictions | Phase 10 |
+| Profile | Settings, theme, data mode, data sources | Partly available |
+
+## UX principles
+
+- Never overwhelm with too many metrics.
+- No financial jargon in everyday text.
+- Never shame users for their spending.
+- Clearly separate actual records from predictions and estimates.
+- Explain important alerts in plain words.
+- Make errors, missing data and uncertain transaction matches visible.
+- Show sample data only when it is clearly labelled as demonstration data.
+  (The API's `/health` and `/summary` responses carry `sample_data` for this.)
+- Every button does something meaningful; no dead controls.
+- Functional, tested screens over decorative mockups.
+
+## Engineering approach
+
+Reusable Flutter components and one consistent design system (colour,
+type, spacing and shape tokens). Build incrementally, test at phone,
+tablet and desktop sizes, and connect each screen to the real backend as
+its module becomes available.
+
+## Backend notes for the UI (collected as phases land)
+
+- Money arrives as decimal strings ("-120.00"); never parse to `double` for
+  arithmetic.
+- Every transaction carries `type_basis` / `category_basis`: show inferred
+  values (basis `rule`) differently from confirmed ones (`source`, `user`).
+- Summaries include `warnings` and a `note` that totals are recorded totals,
+  not a bank balance.
+- Duplicate review (`/api/v1/review/duplicates`) returns each pair with a
+  score, `confidence` and plain-language `reasons`. The two choices map to
+  "Same payment: keep this one" and "Different payments". Show the pending
+  count wherever totals appear (`open_duplicate_reviews` on `/summary`), and
+  offer undo (`/reopen`).

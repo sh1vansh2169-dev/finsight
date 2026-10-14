@@ -53,7 +53,7 @@ def _load_sample(client, dataset):
 
 def test_health(client, make_client, tmp_path):
     assert client.get("/health").json() == {
-        "status": "ok", "version": "0.2.0", "data_mode": "real", "sample_data": False,
+        "status": "ok", "version": "0.3.0", "data_mode": "real", "sample_data": False,
     }
     sample = make_client(
         data_mode=DataMode.SAMPLE, database_url=f"sqlite:///{(tmp_path / 's.db').as_posix()}"
@@ -235,3 +235,52 @@ def test_cli_seed_sample_creates_a_separate_sample_database(tmp_path, capsys):
 
     with pytest.raises(DataModeError):
         create_app(Settings(data_mode=DataMode.REAL, database_url=url))
+
+
+def test_duplicate_review_over_http(client, dataset):
+    _load_sample(client, dataset)
+    app = dataset.payapp
+    _import(client, app.text.encode("utf-8"), app.name, account=synthetic.PAYAPP_ACCOUNT)
+
+    summary = client.get("/api/v1/summary").json()
+    pending = summary["open_duplicate_reviews"]
+    assert pending == len(app.mirrored) + 1
+    assert "may count them twice" in summary["warnings"][0]
+
+    items = client.get("/api/v1/review/duplicates").json()
+    assert len(items) == pending
+    item = items[0]
+    assert item["confidence"] == "high" and item["reasons"] and len(item["transactions"]) == 2
+    a, b = item["transactions"]
+
+    bad = client.post(f"/api/v1/review/duplicates/{item['id']}/resolve", json={"decision": "duplicate"})
+    assert bad.status_code == 422  # must say which record to keep
+    not_in_pair = client.post(
+        f"/api/v1/review/duplicates/{item['id']}/resolve",
+        json={"decision": "duplicate", "keep_transaction_id": 999_999},
+    )
+    assert not_in_pair.status_code == 422
+
+    resolved = client.post(
+        f"/api/v1/review/duplicates/{item['id']}/resolve",
+        json={"decision": "duplicate", "keep_transaction_id": a["id"]},
+    )
+    assert resolved.status_code == 200
+    assert (resolved.json()["status"], resolved.json()["kept_transaction_id"]) == ("duplicate", a["id"])
+    assert client.get("/api/v1/summary").json()["open_duplicate_reviews"] == pending - 1
+
+    hidden = client.get(f"/api/v1/transactions/{b['id']}").json()
+    assert hidden["duplicate_of_id"] == a["id"]
+    listed = {t["id"] for t in client.get("/api/v1/transactions", params={"limit": 500}).json()["items"]}
+    assert b["id"] not in listed
+    with_dupes = client.get("/api/v1/transactions", params={"limit": 500, "include_duplicates": True}).json()
+    assert b["id"] in {t["id"] for t in with_dupes["items"]}
+
+    again = client.post(f"/api/v1/review/duplicates/{item['id']}/resolve", json={"decision": "distinct"})
+    assert again.status_code == 409
+    reopened = client.post(f"/api/v1/review/duplicates/{item['id']}/reopen")
+    assert reopened.json()["status"] == "open"
+    assert client.get(f"/api/v1/transactions/{b['id']}").json()["duplicate_of_id"] is None
+
+    assert client.post("/api/v1/review/duplicates/scan").json() == {"new_candidates": 0}
+    assert client.post("/api/v1/review/duplicates/999/reopen").status_code == 404

@@ -33,7 +33,10 @@ class SchemaError(ValueError):
 
 _ALIASES: dict[str, tuple[str, ...]] = {
     "date": ("date", "transaction date", "txn date", "posting date", "posted date", "value date"),
-    "description": ("description", "narration", "details", "memo", "payee", "particulars", "merchant"),
+    "description": (
+        "description", "narration", "details", "memo", "payee", "particulars", "merchant",
+        "counterparty", "paid to received from",
+    ),
     "amount": ("amount", "amount inr", "amount usd", "transaction amount"),
     "debit": ("debit", "debit amount", "withdrawal", "withdrawal amt", "money out", "paid out"),
     "credit": ("credit", "credit amount", "deposit", "deposit amt", "money in", "paid in"),
@@ -42,7 +45,10 @@ _ALIASES: dict[str, tuple[str, ...]] = {
     "currency": ("currency",),
     "account": ("account", "account name", "account number"),
     "category": ("category",),
-    "reference": ("reference", "ref", "ref no", "reference no", "transaction id", "id", "utr", "chq ref no"),
+    "reference": (
+        "reference", "ref", "ref no", "reference no", "transaction id", "id", "utr", "chq ref no",
+        "upi ref no", "upi transaction id",
+    ),
 }
 _DEBIT_TYPES = {"dr", "debit", "withdrawal"}
 _CREDIT_TYPES = {"cr", "credit", "deposit"}

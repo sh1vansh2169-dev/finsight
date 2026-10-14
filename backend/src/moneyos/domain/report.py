@@ -84,6 +84,11 @@ def to_dict(result: PipelineResult) -> dict:
         "transactions": [transaction_dict(t) for t in result.transactions],
         "duplicates": [transaction_dict(t) for t in result.duplicates],
         "suspected_duplicates": [transaction_dict(t) for t in result.suspected_duplicates],
+        "duplicate_candidates": [
+            {"score": m.score, "confidence": m.confidence, "reasons": list(m.reasons),
+             "a": transaction_dict(a), "b": transaction_dict(b)}
+            for a, b, m in result.candidates
+        ],
         "rejected": [
             {"source_file": r.source_file, "source_row": r.source_row, "reason": r.reason, "raw": r.raw}
             for r in result.rejected
@@ -108,12 +113,15 @@ def render_text(result: PipelineResult) -> str:
         lines += ["", "REJECTED ROWS (not imported)"]
         lines += [f"  {r.source_file}:{r.source_row}  {r.reason}" for r in result.rejected]
 
-    if result.suspected_duplicates:
-        lines += ["", "POSSIBLE DUPLICATES (kept; identical rows in one file, please review)"]
+    if result.candidates:
         lines += [
-            f"  {t.source_file}:{t.source_row}  {t.date}  {_money(t.amount)}  {t.description}"
-            for t in result.suspected_duplicates
+            "",
+            f"POSSIBLE DUPLICATES TO REVIEW ({len(result.candidates)} pairs; nothing removed,"
+            " so totals below may count these twice)",
         ]
+        for a, b, match in result.candidates:
+            lines.append(f"  [{match.score}] {a.source_file}:{a.source_row}  <->  {b.source_file}:{b.source_row}")
+            lines += [f"       - {reason}" for reason in match.reasons]
 
     for currency, s in result.summaries.items():
         lines += [
@@ -152,9 +160,26 @@ def render_text(result: PipelineResult) -> str:
     return "\n".join(lines)
 
 
+# Spreadsheet apps execute cells starting with these as formulas.
+_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+_TEXT_FIELDS = ("description", "account", "category", "reference", "source_file")
+
+
+def _spreadsheet_safe(row: dict) -> dict:
+    """Neutralise formula injection in free-text cells (OWASP CSV injection).
+
+    Only text fields are escaped; amounts like "-120.00" are left as they are.
+    """
+    for name in _TEXT_FIELDS:
+        value = row[name]
+        if isinstance(value, str) and value.startswith(_FORMULA_PREFIXES):
+            row[name] = "'" + value
+    return row
+
+
 def export_csv(result: PipelineResult, path: str | Path) -> None:
     """Write the unique, cleaned transactions to one CSV file."""
     with Path(path).open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=_EXPORT_FIELDS)
         writer.writeheader()
-        writer.writerows(transaction_dict(t) for t in result.transactions)
+        writer.writerows(_spreadsheet_safe(transaction_dict(t)) for t in result.transactions)

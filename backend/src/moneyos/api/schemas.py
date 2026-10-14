@@ -11,7 +11,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from moneyos.db.tables import Account, ImportBatch, ImportRow, TransactionRecord
+from moneyos.db.tables import Account, ImportBatch, ImportRow, MatchCandidate, TransactionRecord
 from moneyos.domain.models import Basis, Direction, Status, TxnType
 from moneyos.services.mapping import signed_amount
 
@@ -48,6 +48,9 @@ class TransactionOut(_Out):
     import_batch_id: int | None
     source_file: str | None
     source_row: int | None
+    duplicate_of_id: int | None = Field(
+        default=None, description="Set when the user confirmed this record duplicates another."
+    )
 
     @classmethod
     def from_record(cls, r: TransactionRecord) -> TransactionOut:
@@ -69,6 +72,7 @@ class TransactionOut(_Out):
             import_batch_id=r.import_batch_id,
             source_file=r.source_file,
             source_row=r.source_row,
+            duplicate_of_id=r.duplicate_of_id,
         )
 
 
@@ -171,4 +175,49 @@ class AccountOut(_Out):
 class SummaryOut(_Out):
     note: str = RECORDED_TOTALS_NOTE
     sample_data: bool
+    open_duplicate_reviews: int
+    warnings: list[str]
     currencies: dict[str, dict[str, Any]]
+
+
+class DuplicateCandidateOut(_Out):
+    id: int
+    score: int = Field(description="0-100, from hand-chosen weights; not a calibrated probability.")
+    confidence: Literal["high", "medium"]
+    reasons: list[str]
+    status: Literal["open", "duplicate", "distinct", "superseded"]
+    kept_transaction_id: int | None
+    transactions: list[TransactionOut]
+
+    @classmethod
+    def from_candidate(cls, c: MatchCandidate) -> DuplicateCandidateOut:
+        return cls(
+            id=c.id,
+            score=c.score,
+            confidence="high" if c.score >= 80 else "medium",
+            reasons=c.reasons,
+            status=c.status,
+            kept_transaction_id=c.kept_id,
+            transactions=[TransactionOut.from_record(c.transaction_a), TransactionOut.from_record(c.transaction_b)],
+        )
+
+
+class DuplicateDecisionIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    decision: Literal["duplicate", "distinct"]
+    keep_transaction_id: int | None = Field(
+        default=None, description="Required for 'duplicate': which of the two records to keep."
+    )
+
+    @model_validator(mode="after")
+    def _keep_matches_decision(self) -> DuplicateDecisionIn:
+        if self.decision == "duplicate" and self.keep_transaction_id is None:
+            raise ValueError("keep_transaction_id is required when decision is 'duplicate'")
+        if self.decision == "distinct" and self.keep_transaction_id is not None:
+            raise ValueError("keep_transaction_id only applies to duplicates")
+        return self
+
+
+class ScanOut(_Out):
+    new_candidates: int

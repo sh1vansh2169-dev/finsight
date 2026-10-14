@@ -21,6 +21,7 @@ from moneyos.domain.classify import Rules, classify
 from moneyos.domain.dedupe import deduplicate
 from moneyos.domain.importer import MAX_IMPORT_BYTES, decode_bytes, import_text
 from moneyos.domain.models import Transaction
+from moneyos.services import review
 from moneyos.services.errors import ConflictError, NotFoundError, PayloadTooLargeError
 from moneyos.services.mapping import from_payload, get_or_create_account, to_domain, to_payload, to_record
 
@@ -170,6 +171,11 @@ def commit_import(session: Session, batch_id: int) -> ImportBatch:
         session.add(to_record(t, accounts[t.account], source="csv_import", import_batch_id=batch.id))
         inserted += 1
 
+    session.flush()
+    # Near-duplicates of what was just added go to the review queue; they
+    # stay in the ledger until the user decides.
+    review.find_new_candidates(session)
+
     _count(batch)
     batch.inserted_rows = inserted
     batch.status = "committed"
@@ -185,6 +191,10 @@ def commit_import(session: Session, batch_id: int) -> ImportBatch:
     )
     session.commit()
     return batch
+
+
+def batch_transaction_ids(session: Session, batch_id: int) -> list[int]:
+    return list(session.scalars(select(TransactionRecord.id).where(TransactionRecord.import_batch_id == batch_id)))
 
 
 def discard_import(session: Session, batch_id: int) -> ImportBatch:

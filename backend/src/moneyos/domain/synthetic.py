@@ -13,8 +13,9 @@ from __future__ import annotations
 import csv
 import io
 import random
+from collections import Counter
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -22,6 +23,15 @@ SAMPLE_MARKER = "SYNTHETIC SAMPLE DATA - NOT REAL TRANSACTIONS"
 _MONTH_ABBR = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 _SAVINGS_ACCOUNT = "Sample Savings 0001"
 CARD_ACCOUNT = "Sample Card 4321"  # suggested --account for the card file
+PAYAPP_ACCOUNT = "Sample PayApp"  # suggested --account for the payment-app export
+# Bank description -> how the payment app names the same merchant.
+_APP_NAMES = {
+    "FRESHMART GROCERIES": "FreshMart",
+    "SPICE ROUTE RESTAURANT": "Spice Route",
+    "CHAI POINT CAFE": "Chai Point",
+    "QUICKCAB RIDE": "QuickCab",
+    "METRO CARD RECHARGE": "Metro Card",
+}
 _OVERLAP_START, _OVERLAP_END = date(2026, 2, 1), date(2026, 2, 15)
 # (description, min rupees, max rupees)
 _VARIABLE_SPEND = (
@@ -71,11 +81,39 @@ class Expected:
 
 
 @dataclass(frozen=True, slots=True)
+class MirroredPayment:
+    """Ground truth: an app payment that is the same money as a bank entry."""
+
+    app_reference: str
+    bank_date: date
+    bank_description: str
+    amount: Decimal
+
+
+@dataclass(frozen=True, slots=True)
+class PayAppExport:
+    """A payment-app history for the same savings account.
+
+    Some payments also appear in the bank statement (true cross-source
+    duplicates, listed in ``mirrored``); some were paid from an account
+    MoneyOS has not seen (``app_only``); some failed (``failed``).
+    """
+
+    name: str
+    text: str
+    mirrored: tuple[MirroredPayment, ...]
+    app_only: int
+    failed: int
+
+
+@dataclass(frozen=True, slots=True)
 class SyntheticDataset:
-    files: dict[str, str]  # file name -> CSV text, in intended import order
-    expected: Expected
+    files: dict[str, str]  # statement file name -> CSV text, in import order
+    expected: Expected  # for the statement files alone
+    payapp: PayAppExport
 
     def write(self, directory: str | Path) -> list[Path]:
+        """Write all files; return the statement paths (not the app export)."""
         directory = Path(directory)
         directory.mkdir(parents=True, exist_ok=True)
         (directory / "README.txt").write_text(
@@ -88,6 +126,7 @@ class SyntheticDataset:
             path = directory / name
             path.write_text(text, encoding="utf-8", newline="")
             paths.append(path)
+        (directory / self.payapp.name).write_text(self.payapp.text, encoding="utf-8", newline="")
         return paths
 
 
@@ -242,4 +281,62 @@ def generate(seed: int = 2026) -> SyntheticDataset:
             ["Posting Date", "Merchant", "Amount", "Type", "Ref No"], third
         ),
     }
-    return SyntheticDataset(files=files, expected=expected)
+    return SyntheticDataset(files=files, expected=expected, payapp=_payapp(savings, seed))
+
+
+def _app_time(rng: random.Random, day: date) -> str:
+    hour, minute = rng.randint(8, 21), rng.randint(0, 59)
+    return (
+        f"{day.day:02d} {_MONTH_ABBR[day.month - 1]} {day.year}, "
+        f"{hour % 12 or 12}:{minute:02d} {'AM' if hour < 12 else 'PM'}"
+    )
+
+
+def _payapp(savings: list[_Entry], seed: int) -> PayAppExport:
+    # A separate random stream, so adding this file left the statements unchanged.
+    rng = random.Random(seed + 1)
+    repeats = Counter((e.day, e.description, e.amount) for e in savings)
+    rows: list[tuple[date, str, Decimal, str, str]] = []
+    mirrored = []
+
+    def reference() -> str:
+        return f"PA{len(rows) + 1:07d}"
+
+    for e in savings:
+        # Identical repeated entries are skipped: which one an app row would
+        # mirror is unknowable, so they make poor ground truth.
+        if e.description not in _APP_NAMES or repeats[(e.day, e.description, e.amount)] > 1:
+            continue
+        if rng.random() >= 0.5:
+            continue
+        ref = reference()
+        # The app shows when you paid; the bank may post it a day later.
+        app_day = e.day - timedelta(days=rng.choice((0, 0, 1)))
+        rows.append((app_day, _APP_NAMES[e.description], e.amount, "SUCCESS", ref))
+        mirrored.append(MirroredPayment(ref, e.day, e.description, e.amount))
+
+    # Paid from an account MoneyOS has not seen: real money, no bank copy.
+    # The 12 Feb one is a decoy: same day and amount as the bank's broadband
+    # bill, but a different merchant. It must not be proposed as a duplicate.
+    app_only = ((date(2026, 1, 18), "-340.00"), (date(2026, 2, 12), "-999.00"), (date(2026, 3, 14), "-410.00"))
+    for day, amount in app_only:
+        rows.append((day, "Corner Kirana Store", Decimal(amount), "SUCCESS", reference()))
+    failed = ((date(2026, 2, 9), "-899.00"), (date(2026, 3, 2), "-1250.00"))
+    for day, amount in failed:
+        rows.append((day, "Spice Route", Decimal(amount), "FAILED", reference()))
+
+    rows.sort(key=lambda r: (r[0], r[4]))
+    text = _csv_text(
+        ["Date", "Paid to / Received from", "Amount", "Type", "Status", "UPI Ref No"],
+        [
+            [_app_time(rng, day), name, f"₹{abs(amount):,.2f}", "Debit" if amount < 0 else "Credit", status, ref]
+            for day, name, amount, status, ref in rows
+        ],
+    )
+    return PayAppExport(
+        name="sample_payapp_2026_q1.csv",
+        text=text,
+        mirrored=tuple(mirrored),
+        app_only=len(app_only),
+        failed=len(failed),
+    )

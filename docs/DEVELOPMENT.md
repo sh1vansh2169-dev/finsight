@@ -37,6 +37,24 @@ then `POST /api/v1/imports/{id}/commit`.
 Run commands from the repo root: default database paths are relative to
 the current directory.
 
+## Database schema changes
+
+The app migrates its database automatically on startup. To change the
+schema:
+
+1. Edit the models in `backend/src/moneyos/db/tables.py`.
+2. Generate a migration against a scratch database that is at the latest
+   revision, then read and correct it (autogenerate is a draft, not truth):
+   ```powershell
+   $env:MONEYOS_DATABASE_URL = "sqlite:///data/scratch.db"
+   .\.venv\Scripts\alembic.exe -c backend\alembic.ini upgrade head
+   .\.venv\Scripts\alembic.exe -c backend\alembic.ini revision --autogenerate -m "describe the change"
+   ```
+3. Rename the new file in `db/migrations/versions/` to the next number
+   (`0003_...py`) and set `revision` to match.
+4. Run the tests. `test_migrations_match_the_models` fails if the models and
+   migrations disagree.
+
 ## Configuration
 
 See [.env.example](../.env.example). Set variables in the shell, e.g.
