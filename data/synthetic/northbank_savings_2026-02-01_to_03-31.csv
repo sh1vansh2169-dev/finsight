@@ -1,0 +1,31 @@
+Txn Date,Narration,Withdrawal,Deposit,Account
+2026-02-01,  acme  corp  salary,,"₹85,000.00",Savings-0001
+2026-02-03,  rent  payment  greenview  apts,"₹22,000.00",,Savings-0001
+2026-02-04,  chai  point  cafe,₹85.66,,Savings-0001
+2026-02-06,  metro  card  recharge,₹487.20,,Savings-0001
+2026-02-07,  chai  point  cafe,₹120.00,,Savings-0001
+2026-02-07,  chai  point  cafe,₹120.00,,Savings-0001
+2026-02-10,  city  power  electricity  bill,"₹1,157.03",,Savings-0001
+2026-02-11,  quickcab  ride,₹308.48,,Savings-0001
+2026-02-12,  fibernet  broadband,₹999.00,,Savings-0001
+2026-02-13,  chai  point  cafe,₹70.83,,Savings-0001
+2026-02-14,  spice  route  restaurant,"₹1,059.32",,Savings-0001
+2026-02-20,  transfer  to  credit  card  4321,"₹7,714.97",,Savings-0001
+2026-02-22,  quickcab  ride,₹170.01,,Savings-0001
+2026-02-23,  metro  card  recharge,₹302.96,,Savings-0001
+2026-02-28,  freshmart  groceries,"₹2,096.15",,Savings-0001
+2026-03-01,  acme  corp  salary,,"₹85,000.00",Savings-0001
+2026-03-03,  rent  payment  greenview  apts,"₹22,000.00",,Savings-0001
+2026-03-04,  metro  card  recharge,₹330.67,,Savings-0001
+2026-03-10,  city  power  electricity  bill,"₹1,710.02",,Savings-0001
+2026-03-10,  quickcab  ride,₹395.22,,Savings-0001
+2026-03-12,  fibernet  broadband,₹999.00,,Savings-0001
+2026-03-13,  chai  point  cafe,₹77.77,,Savings-0001
+2026-03-15,  freshmart  groceries,"₹1,627.38",,Savings-0001
+2026-03-17,  quickcab  ride,₹380.93,,Savings-0001
+2026-03-17,  quickcab  ride,₹456.16,,Savings-0001
+2026-03-19,  quickcab  ride,₹446.66,,Savings-0001
+2026-03-20,  transfer  to  credit  card  4321,"₹3,259.41",,Savings-0001
+2026-03-25,  annual  bonus  acme  corp,,"₹1,25,000.00",Savings-0001
+2026-03-27,  quickcab  ride,₹136.63,,Savings-0001
+2026-03-15,,₹250.00,,Savings-0001
