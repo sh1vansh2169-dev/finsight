@@ -7,23 +7,25 @@
                  │                        │
         api/  ───┤                        │
                  ▼                        │
-        services/  imports, ledger        │
+        services/  imports, ledger, review, analytics, budgets, dashboard, report
                  │                        │
         db/  ◄───┤                        │
                  ▼                        ▼
-        domain/  importer → cleaning → classify → dedupe → summary
+        domain/     importer → cleaning → classify → dedupe → matching → summary, budgets
+        analytics/  frame → coverage → aggregate, stats, quality, charts   (Pandas / NumPy / Matplotlib)
 ```
 
-Dependencies only point downwards. `domain/` imports nothing from the other
-layers and has no database or web code, so the financial logic can be
-tested in milliseconds and reused by notebooks, the CLI, the API and later
-the forecasting code.
+Dependencies only point downwards. `domain/` and `analytics/` import
+nothing from `db`, `services` or `api`, so the financial and analytical
+logic can be tested in milliseconds and reused by notebooks, the CLI, the
+API and later the forecasting code.
 
 | Layer | Responsibility | Key files |
 | --- | --- | --- |
 | `domain` | Parse, validate, classify, de-duplicate, match, summarise | `importer.py`, `cleaning.py`, `classify.py`, `dedupe.py`, `matching.py`, `summary.py`, `models.py`, `money.py` |
 | `db` | Schema, migrations, engine, data-mode guard | `tables.py`, `session.py`, `migrations/` |
-| `services` | Workflows that combine domain logic with storage | `imports.py`, `ledger.py`, `review.py`, `mapping.py` |
+| `analytics` | Descriptive analytics in Pandas: coverage, time series, statistics, data quality, charts | `frame.py`, `coverage.py`, `aggregate.py`, `stats.py`, `quality.py`, `charts.py` |
+| `services` | Workflows that combine domain logic with storage | `imports.py`, `ledger.py`, `review.py`, `analytics.py`, `budgets.py`, `dashboard.py`, `report.py`, `mapping.py` |
 | `api` | Validation (Pydantic), auth, HTTP status mapping | `app.py`, `routes.py`, `schemas.py`, `deps.py` |
 
 ## Key decisions
@@ -91,6 +93,45 @@ the code behaves as intended, not that the weights suit real data. Amounts
 must match exactly, so a fee-inclusive copy will not be proposed. Summaries
 warn while pairs are open, because totals may double-count until then.
 
+### Analytics: unknown is not zero
+**Problem.** A day with no transactions means "nothing spent" only if a
+statement for that day was imported. Otherwise it means "we don't know".
+Treating unknown as zero drags averages down and invents trends.
+**Choice.** Each account's *coverage* is estimated from its imports (first
+to last transaction date of every committed file, overlaps merged).
+Every period in a cash-flow series carries `coverage`, the share of
+statement-backed accounts covering it. Periods with coverage 0 have
+missing values (NaN in Pandas, `null` in JSON, a grey band in charts),
+never 0. Partly covered periods keep their observed totals and are
+labelled with their coverage. Weekday averages divide by covered days only.
+**Money in Pandas** is held as signed int64 minor units, so sums are exact;
+it becomes float64 only where NaN is needed (exact for any realistic
+amount, below 2^53 paise) and Decimal on output.
+**Cross-validation.** The Pandas monthly series and the older pure-Python
+summary are separate implementations of the same definitions; tests require
+them to agree to the paisa on several synthetic seeds.
+**Limits.** Coverage is approximated by first/last transaction date, so it
+slightly understates real statement periods. Accounts with only manual
+entries (cash) have no coverage and are reported as such: missing *records*
+cannot be detected from the data alone. Coverage is computed across all
+accounts, not per currency.
+
+### Budgets
+A monthly limit per category and currency. The state (`on_track` under 80%,
+`close` from 80%, `over` above the limit) is decided on exact amounts; the
+percentage is rounded only for display. A pace projection (spending so far
+scaled to the month) is offered only from day 7 of the current month and is
+labelled an estimate. Messages use neutral wording ("over the limit"), never
+judgement.
+
+### Dashboard
+`GET /api/v1/dashboard` returns one month (default: the month of the newest
+transaction): recorded summary, daily and trailing-monthly series with
+coverage, recent transactions, budget use and warnings. Sections that depend
+on unbuilt phases (receivables and liabilities, forecasts, commitments) are
+listed in `not_yet_available` so a client can say so instead of showing a
+zero.
+
 ### Database migrations
 The schema is managed by Alembic (`db/migrations/`). On startup, `init_db`
 checks the data mode first (so a wrong-mode database is never touched) and
@@ -136,6 +177,7 @@ no meaningful cost.
 | HTTP | Status codes, JSON money format, validation, auth | `test_api.py` |
 | Review | Proposals, decisions, undo, supersession, audit, totals before and after review | `test_review.py`, `test_matching.py` |
 | Schema | Migrations equal the models; v0.2 databases upgrade with data intact; downgrade/upgrade | `test_migrations.py` |
+| Analytics | Pandas series agree with the plain-Python summary; unknown periods stay NaN/null; statistics match Python's `statistics` module; charts render | `tests/analytics/`, `test_analytics_api.py` |
 
 Warnings are errors in the test run (`filterwarnings = error`), which caught
 two dependency deprecations and two leaked database connections during
@@ -157,4 +199,10 @@ matcher's list of ignored payment-rail words), and a test was added for it.
 - **Precision vs recall trade-offs**: a lower threshold finds more true
   duplicates but asks the user about more false ones.
 - **Schema migrations**: why `create_all` is not enough once data exists.
+- **Missing data vs zero**: NaN propagation in Pandas, and why `mean()`
+  skipping NaN is what you want here.
+- **Resampling and periods**: daily → ISO-week → calendar-month aggregation
+  with `to_period`, and checking that the levels add up.
+- **Robust statistics**: why the median describes a "typical" payment better
+  than the mean when rent is one huge outlier.
 - **Layered architecture**: pure core, thin I/O shells.

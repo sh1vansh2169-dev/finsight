@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from moneyos import __version__
+from moneyos.api import analytics as analytics_api
 from moneyos.api.deps import require_token
 from moneyos.api.routes import router
 from moneyos.api.schemas import HealthOut
@@ -58,4 +59,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     app.include_router(router, prefix="/api/v1", dependencies=[Depends(require_token)])
+    app.include_router(analytics_api.router, prefix="/api/v1", dependencies=[Depends(require_token)])
     return app

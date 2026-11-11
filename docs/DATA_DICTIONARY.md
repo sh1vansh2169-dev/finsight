@@ -54,10 +54,30 @@ Pairs the matcher thinks may be the same payment. Only the user resolves them.
 | `kept_id` | For `duplicate`: the record that was kept |
 | `created_at`, `resolved_at` | UTC |
 
+## `budgets`
+
+| Column | Notes |
+| --- | --- |
+| `category`, `currency` | Unique together. Category names match `transactions.category` exactly |
+| `limit_minor` | Monthly limit in minor units, positive |
+| `created_at`, `updated_at` | UTC |
+
+Spending against a budget counts `expense` debits in that category and
+currency, excluding failed payments and confirmed duplicates.
+
 ## `alembic_version`
 
-Current schema revision, managed by Alembic. `0001` is the v0.2 schema;
-`0002` adds duplicate review.
+Current schema revision, managed by Alembic. `0001` is the v0.2 schema,
+`0002` adds duplicate review, `0003` adds budgets.
+
+## Analytics outputs (not stored)
+
+| Field | Meaning |
+| --- | --- |
+| `coverage` | Share (0–1) of statement-backed accounts whose imported statements cover a period, averaged over its days. Accounts with only manual entries are not counted |
+| amounts in a series point | `null` when `coverage` is 0: unknown, not zero |
+| `projected_month_total` | Estimate: spending so far scaled to the whole month; only from day 7 of the current month |
+| `share` (by category) | Category spending / all spending in the range |
 
 ## `accounts`
 

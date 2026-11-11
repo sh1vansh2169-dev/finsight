@@ -31,8 +31,10 @@ and variation across simulated profiles.
    repayments (Money Majra, Phase 5). Transaction types for lending already
    exist in the ledger.
 2. Source-coverage indicators: which accounts were imported for which
-   date ranges. Import batches already record the file and its rows, but
-   not the coverage period. This needs adding.
+   date ranges. **Partly built (Phase 4):** `analytics/coverage.py` derives
+   per-account coverage intervals and gaps from imports, and every
+   cash-flow series point carries a coverage fraction. Still approximate
+   (first-to-last transaction date per file).
 3. A synthetic profile generator with known obligations and controllable
    missingness, extending `domain/synthetic.py`.
 
@@ -54,3 +56,5 @@ data quality.
 ## Log
 
 - 2026-10-14: Question recorded. No experiments run.
+- 2026-11-11: Coverage indicators available from analytics (Phase 4). No
+  forecasting experiments run yet.

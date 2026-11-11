@@ -206,6 +206,23 @@ class MatchCandidate(Base):
     transaction_b: Mapped[TransactionRecord] = relationship(foreign_keys=[transaction_b_id])
 
 
+class Budget(Base):
+    """A monthly spending limit for one category in one currency."""
+
+    __tablename__ = "budgets"
+    __table_args__ = (
+        CheckConstraint("limit_minor > 0", name="ck_budget_positive"),
+        UniqueConstraint("category", "currency", name="uq_budget_category_currency"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    category: Mapped[str] = mapped_column(String(100))
+    currency: Mapped[str] = mapped_column(String(3))
+    limit_minor: Mapped[int] = mapped_column(BigInteger)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now, onupdate=utc_now)
+
+
 class AuditEvent(Base):
     """Append-only record of imports, manual entries and corrections."""
 

@@ -66,6 +66,13 @@ its module becomes available.
   values (basis `rule`) differently from confirmed ones (`source`, `user`).
 - Summaries include `warnings` and a `note` that totals are recorded totals,
   not a bank balance.
+- Home screen data: `GET /api/v1/dashboard?month=YYYY-MM`. Amounts in
+  `daily`/`monthly` are `null` for periods no statement covers: draw those
+  as "unknown" (the report uses a grey band), never as a dip to zero. Show
+  `coverage` below 100% as "partly covered". `not_yet_available` lists
+  sections to show as "coming later", not as empty.
+- Budget `message` text is already neutral and plain-language; `state` is
+  `on_track` / `close` / `over`. Pair state colours with an icon and label.
 - Duplicate review (`/api/v1/review/duplicates`) returns each pair with a
   score, `confidence` and plain-language `reasons`. The two choices map to
   "Same payment: keep this one" and "Different payments". Show the pending

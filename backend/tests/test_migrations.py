@@ -4,11 +4,14 @@ import pytest
 from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
+from alembic.script import ScriptDirectory
 from sqlalchemy import inspect, text
 
 from moneyos.config import DataMode
 from moneyos.db.session import DataModeError, alembic_config, init_db, make_engine, migrate
 from moneyos.db.tables import Base
+
+HEAD = ScriptDirectory.from_config(alembic_config()).get_current_head()
 
 
 @pytest.fixture
@@ -54,7 +57,7 @@ def test_v02_database_is_stamped_upgraded_and_keeps_its_data(engine, database_ur
     factory = init_db(database_url, DataMode.REAL)
     factory.kw["bind"].dispose()
 
-    assert _revision(engine) == "0002"
+    assert _revision(engine) == HEAD
     columns = {c["name"] for c in inspect(engine).get_columns("transactions")}
     assert "duplicate_of_id" in columns
     assert "match_candidates" in inspect(engine).get_table_names()
@@ -80,4 +83,4 @@ def test_downgrade_and_upgrade_round_trip(engine):
         command.downgrade(config, "base")
         assert set(inspect(connection).get_table_names()) == {"alembic_version"}
         command.upgrade(config, "head")
-    assert _revision(engine) == "0002"
+    assert _revision(engine) == HEAD

@@ -7,6 +7,7 @@ import glob
 import ipaddress
 import json
 import sys
+from pathlib import Path
 
 from moneyos.config import DEFAULT_DATABASE_URLS, DataMode, Settings
 from moneyos.domain import report, synthetic
@@ -34,6 +35,11 @@ def _build_parser() -> argparse.ArgumentParser:
     seed = commands.add_parser("seed-sample", help="load synthetic data into the separate sample database")
     seed.add_argument("--database", default=DEFAULT_DATABASE_URLS[DataMode.SAMPLE], help="SQLAlchemy URL")
     seed.add_argument("--seed", type=int, default=2026)
+
+    rep = commands.add_parser("report", help="write a Markdown analytics report with charts")
+    rep.add_argument("--out", default="data/reports/latest", help="output folder (default: data/reports/latest)")
+    rep.add_argument("--sample", action="store_true", help="report on the synthetic sample database")
+    rep.add_argument("--currency", help="needed when the ledger has more than one currency")
 
     serve = commands.add_parser("serve", help="run the API server")
     serve.add_argument("--host", default="127.0.0.1")
@@ -118,6 +124,31 @@ def _cmd_seed_sample(args) -> int:
     return 0
 
 
+def _cmd_report(args) -> int:
+    from moneyos.db.session import DataModeError, init_db
+    from moneyos.services.errors import InvalidRequestError
+    from moneyos.services.report import write_report
+
+    settings = Settings.from_env(data_mode=DataMode.SAMPLE if args.sample else None)
+    try:
+        factory = init_db(settings.database_url, settings.data_mode)
+    except DataModeError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    try:
+        with factory() as session:
+            path = write_report(
+                session, Path(args.out), currency=args.currency, sample=settings.data_mode == DataMode.SAMPLE
+            )
+    except InvalidRequestError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    finally:
+        factory.kw["bind"].dispose()
+    print(f"Report written to {path}")
+    return 0
+
+
 def _cmd_serve(args) -> int:
     import uvicorn
 
@@ -157,5 +188,7 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_import(args)
     if args.command == "seed-sample":
         return _cmd_seed_sample(args)
+    if args.command == "report":
+        return _cmd_report(args)
     return _cmd_serve(args)
 

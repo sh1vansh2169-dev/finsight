@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "moneyos"
-version = "0.3.0"
+version = "0.4.0"
 description = "Personal finance ledger: transaction import, cleaning, deduplication and summaries."
 requires-python = ">=3.12"
 # Lower bounds are the versions this was tested with; upper bounds stop a
@@ -16,6 +16,9 @@ dependencies = [
     "sqlalchemy>=2.1.4,<2.2",
     "python-multipart>=0.0.32,<1",
     "alembic>=1.20,<2",
+    "pandas>=3.1,<4",
+    "numpy>=2.5,<3",
+    "matplotlib>=3.11,<4",
 ]
 
 [project.optional-dependencies]

@@ -28,7 +28,12 @@ The install is editable: source changes apply without reinstalling.
 .\.venv\Scripts\moneyos.exe seed-sample                    # load samples into data\sample\moneyos-sample.db
 .\.venv\Scripts\moneyos.exe serve --sample                 # API on the sample database
 .\.venv\Scripts\moneyos.exe serve                          # API on the real database (data\moneyos.db)
+.\.venv\Scripts\moneyos.exe report --sample                # Markdown report + charts in data\reports\latest
 ```
+
+The report is reproducible: the same database gives the same tables and
+charts (only the "Generated" date changes). Reports go under `data/`, which
+is git-ignored, because a report on real data contains real data.
 
 Open http://127.0.0.1:8000/docs for interactive API documentation. To try
 an import there: `POST /api/v1/imports/preview` with a CSV, check the rows,
@@ -66,7 +71,9 @@ See [.env.example](../.env.example). Set variables in the shell, e.g.
   in JSON. Never `float`.
 - **Dates:** `date` for transaction dates; timezone-aware UTC `datetime`
   for timestamps.
-- **Layering:** `domain` must not import from `db`, `services` or `api`.
+- **Layering:** `domain` and `analytics` must not import from `db`, `services` or `api`.
+- **Unknown is not zero:** in analytics, a period without statement coverage
+  is NaN/null, never 0.
 - **Tests:** every financial calculation gets a unit test and, where
   possible, an invariant test. Warnings fail the test run.
 - **Data:** only synthetic data in the repo. Generated samples are named
