@@ -118,6 +118,8 @@ def _cmd_seed_sample(args) -> int:
                     f"{batch.rejected_rows} rejected"
                 )
             print(f"Possible duplicates waiting for review: {review.count_open(session)}")
+            if _seed_sample_majra(session):
+                print("Money Majra: sample trip with Sam and Ria, and a loan to a friend linked to a bank payment")
     finally:
         factory.kw["bind"].dispose()
     print(f"\n{synthetic.SAMPLE_MARKER}\nStored in {args.database}. Serve it with: moneyos serve --sample")
@@ -147,6 +149,44 @@ def _cmd_report(args) -> int:
         factory.kw["bind"].dispose()
     print(f"Report written to {path}")
     return 0
+
+
+def _seed_sample_majra(session) -> bool:
+    """Synthetic Money Majra data. Skipped if the sample already has some."""
+    from datetime import date
+    from decimal import Decimal
+
+    from sqlalchemy import func, select
+
+    from moneyos.db.tables import MajraPerson, TransactionRecord
+    from moneyos.domain.majra import SplitMethod
+    from moneyos.services import majra
+
+    if session.scalar(select(func.count()).select_from(MajraPerson)) > 1:
+        return False
+    you = majra.me(session)
+    sam, ria, friend = (majra.add_person(session, n) for n in ("Sam", "Ria", "Friend 7731"))
+    trip = majra.create_group(session, "Goa trip (sample)", "INR", [sam.id, ria.id])
+    everyone = [(you.id, None), (sam.id, None), (ria.id, None)]
+    majra.add_expense(session, trip.id, description="Beach shack dinner", occurred_on=date(2026, 3, 6),
+                      amount=Decimal("2400"), paid_by_id=you.id, method=SplitMethod.EQUAL, participants=everyone)
+    majra.add_expense(session, trip.id, description="Scooter rental", occurred_on=date(2026, 3, 7),
+                      amount=Decimal("1500"), paid_by_id=sam.id, method=SplitMethod.SHARES,
+                      participants=[(you.id, Decimal(2)), (sam.id, Decimal(2)), (ria.id, Decimal(1))])
+    majra.add_payment(session, trip.id, payer_id=ria.id, receiver_id=you.id, amount=Decimal("500"),
+                      occurred_on=date(2026, 3, 12), description="Ria paid back part of dinner")
+    # The synthetic statement has an unexplained UPI payment of 1,500 on 9 March:
+    # record it as a loan and link it, which turns it from "unknown" into "lent".
+    upi = session.scalar(
+        select(TransactionRecord).where(
+            func.lower(TransactionRecord.description) == "upi/p2p/friend-7731",
+            TransactionRecord.amount_minor == 150000,
+        )
+    )
+    majra.add_loan(session, person_id=friend.id, lent=True, amount=Decimal("1500"), currency="INR",
+                   occurred_on=date(2026, 3, 9), description="Lent to a friend",
+                   transaction_id=upi.id if upi else None)
+    return True
 
 
 def _cmd_serve(args) -> int:

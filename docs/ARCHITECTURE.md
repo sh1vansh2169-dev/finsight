@@ -25,7 +25,7 @@ API and later the forecasting code.
 | `domain` | Parse, validate, classify, de-duplicate, match, summarise | `importer.py`, `cleaning.py`, `classify.py`, `dedupe.py`, `matching.py`, `summary.py`, `models.py`, `money.py` |
 | `db` | Schema, migrations, engine, data-mode guard | `tables.py`, `session.py`, `migrations/` |
 | `analytics` | Descriptive analytics in Pandas: coverage, time series, statistics, data quality, charts | `frame.py`, `coverage.py`, `aggregate.py`, `stats.py`, `quality.py`, `charts.py` |
-| `services` | Workflows that combine domain logic with storage | `imports.py`, `ledger.py`, `review.py`, `analytics.py`, `budgets.py`, `dashboard.py`, `report.py`, `mapping.py` |
+| `services` | Workflows that combine domain logic with storage | `imports.py`, `ledger.py`, `review.py`, `analytics.py`, `budgets.py`, `dashboard.py`, `majra.py`, `report.py`, `mapping.py` |
 | `api` | Validation (Pydantic), auth, HTTP status mapping | `app.py`, `routes.py`, `schemas.py`, `deps.py` |
 
 ## Key decisions
@@ -108,6 +108,43 @@ category with only refunds in a period shows negative spending rather
 than hiding it. Linking refunds to their purchases is the same matching
 problem as duplicate review and is planned alongside transfer and reversal
 pairing.
+
+### Money Majra: who owes whom
+**Problem.** Shared costs and informal loans (a trip split three ways, ₹500
+lent to a friend) never appear correctly in bank data: the bank sees one
+payment, not who owes what.
+**Model.** People (exactly one is you, enforced by a unique index), groups
+(a `direct` group per person and currency holds one-to-one lending),
+and entries: shared *expenses* with per-person shares, *loans*, and
+*payments* (repayments and settlements). Entries are voided, never
+deleted, so history and the audit trail stay intact.
+**Calculations** (`domain/majra.py`, pure and deterministic):
+- *Splits* (equal, exact amounts, percentages, weights) use the largest-
+  remainder method on whole paise: shares always add up to the amount, no
+  share is off by a whole paisa from its exact value, and the leftover
+  paisa goes to the participant listed first.
+- *Balances*: positive means the person is owed. They sum to exactly zero
+  in every group; this is checked on every calculation.
+- *Settlement with the fewest payments.* The minimum is (people with a
+  non-zero balance) − (the largest number of groups that each sum to zero),
+  which is NP-hard in general. For up to 16 such people it is computed
+  exactly with a dynamic programme over subsets (`dp[S] = max dp[S − i] +
+  [S sums to zero]`) and each zero-sum group is settled with size − 1
+  payments. Larger groups get a greedy plan (≤ n − 1 payments), flagged as
+  not proven minimal. Tests compare the result against brute-force
+  enumeration of all partitions on 150 random groups.
+**Consistency rules.** A payment must go from someone who owes to someone
+who is owed and may not exceed either side's balance (overpaying would
+silently become a new loan). An identical payment on the same day is
+refused unless explicitly confirmed. A bank transaction can back at most
+one entry, and linking one sets its ledger type to lent, borrowed or
+repayment (as a user correction, audited).
+**Not guaranteed money.** What others owe you is shown separately as
+"expected back" and is never added to ledger totals or treated as
+available money.
+**Limits.** No currency conversion: each group has one currency. A shared
+expense you paid stays in your spending at the full amount; your
+"real" share is visible only in Money Majra.
 
 ### Analytics: unknown is not zero
 **Problem.** A day with no transactions means "nothing spent" only if a
@@ -221,4 +258,11 @@ matcher's list of ignored payment-rail words), and a test was added for it.
   with `to_period`, and checking that the levels add up.
 - **Robust statistics**: why the median describes a "typical" payment better
   than the mean when rent is one huge outlier.
+- **Apportionment**: the largest-remainder method, and why rounding each
+  share separately never adds up.
+- **Dynamic programming over subsets**: an exact answer to an NP-hard
+  problem when the input is small, and knowing when to fall back.
+- **Property-based testing**: checking invariants (shares add up, balances
+  sum to zero, plans settle everyone) on hundreds of random cases, and
+  checking an optimiser against brute force.
 - **Layered architecture**: pure core, thin I/O shells.

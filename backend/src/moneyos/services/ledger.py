@@ -159,8 +159,13 @@ def correct_transaction(
     *,
     txn_type: TxnType | None = None,
     category: str | None = None,
+    commit: bool = True,
 ) -> TransactionRecord:
-    """Apply a user correction. The previous values go into the audit log."""
+    """Apply a user correction. The previous values go into the audit log.
+
+    ``commit=False`` lets a caller make the correction part of its own
+    database transaction.
+    """
     if txn_type is None and category is None:
         raise InvalidRequestError("nothing to change")
     record = get_transaction(session, transaction_id)
@@ -185,7 +190,8 @@ def correct_transaction(
             details={"before": before, "after": after},
         )
     )
-    session.commit()
+    if commit:
+        session.commit()
     return record
 
 

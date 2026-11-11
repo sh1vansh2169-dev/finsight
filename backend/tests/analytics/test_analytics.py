@@ -283,3 +283,13 @@ def test_stats_net_refunds_per_category(make_txn):
     assert by_category.loc["Travel", ["count", "total", "refunds", "net"]].tolist() == [0, 0, 8000, -8000]
     assert list(by_category.index) == ["Shopping", "Food", "Travel"]  # by net, largest first
     assert by_category["share"].sum() == pytest.approx(1.0)
+
+
+def test_month_over_month_is_after_refunds(make_txn):
+    rows = [
+        _t(make_txn, "2026-01-05", "-100.00", category="Shopping"),
+        _t(make_txn, "2026-02-05", "-100.00", category="Shopping"),
+        _t(make_txn, "2026-02-09", "60.00", TxnType.REFUND, category="Shopping"),
+    ]
+    mom = spending_stats(transactions_frame(rows)).month_over_month
+    assert mom.loc["Shopping"].tolist() == [10000, 4000, -6000]

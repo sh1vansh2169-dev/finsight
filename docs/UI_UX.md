@@ -72,6 +72,12 @@ its module becomes available.
   as "unknown" (the report uses a grey band), never as a dip to zero. Show
   `coverage` below 100% as "partly covered". `not_yet_available` lists
   sections to show as "coming later", not as empty.
+- Money Majra: `/api/v1/majra/...`. Show balances as "Sam owes you" /
+  "You owe Ria" rather than signed numbers. The settlement list is a
+  *suggestion* with the fewest payments. Show the `note` that money owed to
+  you is expected, not guaranteed. A 409 on a payment means "this looks
+  like a repeat": offer "Yes, it's a second payment" (`confirm_duplicate`).
+  Voided entries stay visible, struck through.
 - Budget `message` text is already neutral and plain-language; `state` is
   `on_track` / `close` / `over`. Pair state colours with an icon and label.
 - Duplicate review (`/api/v1/review/duplicates`) returns each pair with a

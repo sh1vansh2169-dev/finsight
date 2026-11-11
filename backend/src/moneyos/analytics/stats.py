@@ -87,7 +87,14 @@ def spending_stats(
     by_weekday["average_per_day"] = by_weekday["total"] / by_weekday["covered_days"].replace(0, np.nan)
     by_weekday.index = list(_WEEKDAYS)
 
-    monthly = spend.groupby([spend["date"].dt.to_period("M"), "category"])["spend_minor"].sum().unstack(fill_value=0)
+    # Spending after refunds per category and month (refunds reduce spending).
+    net_rows = pd.concat([
+        spend[["date", "category", "spend_minor"]],
+        refund_rows.assign(spend_minor=-refund_rows["amount_minor"])[["date", "category", "spend_minor"]],
+    ])
+    monthly = (
+        net_rows.groupby([net_rows["date"].dt.to_period("M"), "category"])["spend_minor"].sum().unstack(fill_value=0)
+    )
     if len(monthly) >= 2:
         previous, latest = monthly.iloc[-2], monthly.iloc[-1]
         month_over_month = pd.DataFrame({"previous": previous, "latest": latest})

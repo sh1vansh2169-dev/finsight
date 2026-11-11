@@ -5,13 +5,13 @@ bank and card statements, cleans and de-duplicates them, keeps a unified
 ledger with provenance for every value, and reports recorded totals. It is
 the foundation for later analytics, forecasting and ML work.
 
-> **Status: v0.4, early development.** Not production-ready and not
+> **Status: v0.5, early development.** Not production-ready and not
 > security-reviewed. Use synthetic data unless you understand
 > [SECURITY.md](docs/SECURITY.md).
 
 ## What works today
 
-All of this is covered by automated tests (249 passing at the last run; see
+All of this is covered by automated tests (732 passing at the last run, most of them property-based checks over random cases; see
 [DEVELOPMENT.md](docs/DEVELOPMENT.md) to run them yourself).
 
 | Area | Implemented |
@@ -25,6 +25,7 @@ All of this is covered by automated tests (249 passing at the last run; see
 | Budgets | Monthly limit per category; use, remaining, neutral status, pace estimate |
 | Dashboard data | One call for the Home screen: month summary, trends, recent transactions, budgets, warnings, and a list of sections not built yet |
 | Reports | `moneyos report`: Markdown report with charts, including what it cannot tell you |
+| Money Majra | People and groups; shared expenses (equal, exact, percentage or weighted splits, exact to the paisa); loans; partial repayments; balances that always sum to zero; a settlement plan with the fewest payments; protection against overpaying, repeated payments and double-linked bank payments; void with history; link to bank transactions |
 | Ledger | Unified schema, integer minor units, transaction types (expense, income, transfer, refund, lent, borrowed, repayments, reversal, unknown), provenance of every classification |
 | Manual entry & corrections | Cash/manual transactions; user corrections of type and category with an audit trail |
 | Summaries | Recorded inflow/outflow/net, income, spending after refunds (refunds reduce spending in their category), unclassified money, transfers, by month and category, data-quality warnings |
@@ -34,7 +35,7 @@ All of this is covered by automated tests (249 passing at the last run; see
 ## Not built yet
 
 See the [roadmap](#roadmap). In particular: no web app or any screens
-(the dashboard exists as API data only), no Money Majra, no ML models, no
+(the dashboard exists as API data only), no ML models, no
 forecasts, no
 payment-app integrations, no LLM assistant. **No ML model has been trained
 yet.**
@@ -90,7 +91,7 @@ frontend/       (planned) React + TypeScript web app
 | 2 | CSV import and manual entry | **Done** (CSV formats beyond the supported layouts: planned) |
 | 3 | Normalisation, deduplication, ledger | **Done**: exact dedupe, near-duplicate review queue, audit trail. Open: transfer pairing between your own accounts, reversal pairing |
 | 4 | Dashboard and descriptive analytics (Pandas) | **Done** (data and API; the screens themselves are Phase 8) |
-| 5 | Money Majra: lending, borrowing, shared expenses, repayments, settlements | Not started; transaction types already exist |
+| 5 | Money Majra: lending, borrowing, shared expenses, repayments, settlements | **Done** (API; screens are Phase 8) |
 | 6 | ML and forecasting: categorisation (rules vs TF-IDF + Logistic Regression, Random Forest, XGBoost); forecasting (baselines vs exponential smoothing, SARIMA, Random Forest, XGBoost); anomaly detection (z-score vs Isolation Forest, LOF); spending clustering as research | Not started |
 | 7 | Recurring payment detection, commitments, financial digital twin (what-if), rule-based recommendations | Not started |
 | 8 | Web app: React + TypeScript + Tailwind; user accounts, login (JWT), per-user data isolation | Not started |

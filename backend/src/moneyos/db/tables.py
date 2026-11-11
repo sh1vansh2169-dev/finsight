@@ -224,6 +224,92 @@ class Budget(Base):
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now, onupdate=utc_now)
 
 
+class MajraPerson(Base):
+    """Someone you share costs with or lend to. Exactly one row is you."""
+
+    __tablename__ = "majra_people"
+    __table_args__ = (
+        Index(
+            "uq_majra_people_me",
+            "is_me",
+            unique=True,
+            sqlite_where=text("is_me = 1"),
+            postgresql_where=text("is_me"),
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True)
+    is_me: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now)
+
+
+class MajraGroupMember(Base):
+    __tablename__ = "majra_group_members"
+
+    group_id: Mapped[int] = mapped_column(ForeignKey("majra_groups.id", ondelete="CASCADE"), primary_key=True)
+    person_id: Mapped[int] = mapped_column(ForeignKey("majra_people.id"), primary_key=True)
+
+
+class MajraGroup(Base):
+    """A set of people whose shared costs are settled together.
+
+    ``direct`` groups hold one-to-one lending between you and one person.
+    """
+
+    __tablename__ = "majra_groups"
+    __table_args__ = (CheckConstraint("kind IN ('group', 'direct')", name="ck_majra_group_kind"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    kind: Mapped[str] = mapped_column(String(10), default="group")
+    currency: Mapped[str] = mapped_column(String(3))
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now)
+
+    members: Mapped[list[MajraPerson]] = relationship(secondary="majra_group_members", order_by="MajraPerson.id")
+
+
+class MajraEntry(Base):
+    """A shared expense, a loan or a payment. Corrected by voiding, never deleted."""
+
+    __tablename__ = "majra_entries"
+    __table_args__ = (
+        CheckConstraint("kind IN ('expense', 'loan', 'payment')", name="ck_majra_entry_kind"),
+        CheckConstraint("amount_minor > 0", name="ck_majra_entry_positive"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("majra_groups.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(10))
+    description: Mapped[str] = mapped_column(String(200))
+    occurred_on: Mapped[date] = mapped_column(Date)
+    amount_minor: Mapped[int] = mapped_column(BigInteger)
+    paid_by_id: Mapped[int] = mapped_column(ForeignKey("majra_people.id"))
+    paid_to_id: Mapped[int | None] = mapped_column(ForeignKey("majra_people.id"))
+    split_method: Mapped[str | None] = mapped_column(String(10))
+    # The ledger transaction this entry corresponds to, if any (e.g. the UPI
+    # payment that was the loan). One transaction backs at most one entry.
+    transaction_id: Mapped[int | None] = mapped_column(ForeignKey("transactions.id"))
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now)
+    voided_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    void_reason: Mapped[str | None] = mapped_column(String(200))
+
+    shares: Mapped[list[MajraShare]] = relationship(cascade="all, delete-orphan", order_by="MajraShare.person_id")
+    paid_by: Mapped[MajraPerson] = relationship(foreign_keys=[paid_by_id])
+    paid_to: Mapped[MajraPerson | None] = relationship(foreign_keys=[paid_to_id])
+
+
+class MajraShare(Base):
+    """One participant's share of a shared expense."""
+
+    __tablename__ = "majra_shares"
+    __table_args__ = (CheckConstraint("share_minor >= 0", name="ck_majra_share_non_negative"),)
+
+    entry_id: Mapped[int] = mapped_column(ForeignKey("majra_entries.id", ondelete="CASCADE"), primary_key=True)
+    person_id: Mapped[int] = mapped_column(ForeignKey("majra_people.id"), primary_key=True)
+    share_minor: Mapped[int] = mapped_column(BigInteger)
+
+
 class AuditEvent(Base):
     """Append-only record of imports, manual entries and corrections."""
 

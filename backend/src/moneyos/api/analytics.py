@@ -16,6 +16,7 @@ from fastapi import APIRouter, Query, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from moneyos.analytics.frame import to_money
+from moneyos.api.majra import MajraSummaryOut, summary_out
 from moneyos.api.routes import SessionDep, SettingsDep
 from moneyos.api.schemas import RECORDED_TOTALS_NOTE, TransactionOut
 from moneyos.config import DataMode
@@ -102,6 +103,9 @@ class DashboardOut(BaseModel):
     budgets: list[BudgetUseOut]
     warnings: list[str]
     open_duplicate_reviews: int
+    money_majra: MajraSummaryOut | None = Field(
+        description="Owed to you / owed by you. Expected, not guaranteed; never added to totals."
+    )
     not_yet_available: dict[str, str]
 
 
@@ -152,6 +156,7 @@ def get_dashboard(session: SessionDep, settings: SettingsDep, month: MonthQuery 
         budgets=[BudgetUseOut.from_use(u) for u in d.budgets],
         warnings=d.warnings,
         open_duplicate_reviews=d.open_duplicate_reviews,
+        money_majra=summary_out(d.majra) if d.majra else None,
         not_yet_available=d.not_yet_available,
     )
 

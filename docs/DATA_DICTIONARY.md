@@ -65,10 +65,23 @@ Pairs the matcher thinks may be the same payment. Only the user resolves them.
 Spending against a budget counts `expense` debits in that category and
 currency, excluding failed payments and confirmed duplicates.
 
+## Money Majra tables
+
+| Table | Columns and meaning |
+| --- | --- |
+| `majra_people` | `name` (unique), `is_me` (exactly one row; unique partial index) |
+| `majra_groups` | `name`, `kind` (`group`, or `direct` for one-to-one lending with one person), `currency` (one per group) |
+| `majra_group_members` | `group_id`, `person_id` |
+| `majra_entries` | `kind` (`expense`, `loan`, `payment`), `description`, `occurred_on`, `amount_minor` (> 0), `paid_by_id` (payer / lender / person paying back), `paid_to_id` (borrower / person being paid; null for expenses), `split_method`, `transaction_id` (the ledger transaction that carried the money; at most one active entry per transaction), `voided_at`, `void_reason` |
+| `majra_shares` | Per-participant share of an expense, `share_minor` ≥ 0. Shares add up to the entry amount exactly |
+
+Balance sign: positive = the person is owed money; negative = they owe.
+Group balances always sum to zero.
+
 ## `alembic_version`
 
 Current schema revision, managed by Alembic. `0001` is the v0.2 schema,
-`0002` adds duplicate review, `0003` adds budgets.
+`0002` adds duplicate review, `0003` adds budgets, `0004` adds Money Majra.
 
 ## Analytics outputs (not stored)
 
