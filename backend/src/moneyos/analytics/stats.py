@@ -23,7 +23,10 @@ class SpendingStats:
     median_minor: float | None
     std_minor: float | None  # sample standard deviation (n - 1)
     p90_minor: float | None
-    by_category: pd.DataFrame  # count, total, mean, median, share; largest first
+    # Per category: count, total (purchases), mean and median payment,
+    # refunds, net (purchases minus refunds) and share of net spending;
+    # largest net first.
+    by_category: pd.DataFrame
     top_merchants: pd.DataFrame  # count, total; largest first
     by_weekday: pd.DataFrame  # total and average per *covered* weekday
     month_over_month: pd.DataFrame  # per category: previous, latest, change
@@ -50,12 +53,17 @@ def spending_stats(
     values = spend["spend_minor"]
     n = len(values)
 
-    by_category = (
-        spend.groupby("category")["spend_minor"]
-        .agg(count="count", total="sum", mean="mean", median="median")
-        .sort_values(["total", "count"], ascending=False)
-    )
-    by_category["share"] = by_category["total"] / values.sum() if n else 0.0
+    by_category = spend.groupby("category")["spend_minor"].agg(count="count", total="sum", mean="mean", median="median")
+    refund_rows = counted(frame)
+    refund_rows = refund_rows[refund_rows["txn_type"] == TxnType.REFUND.value]
+    refunds = refund_rows.groupby("category")["amount_minor"].sum()
+    by_category = by_category.reindex(by_category.index.union(refunds.index))
+    by_category[["count", "total"]] = by_category[["count", "total"]].fillna(0).astype("int64")
+    by_category["refunds"] = refunds.reindex(by_category.index, fill_value=0).astype("int64")
+    by_category["net"] = by_category["total"] - by_category["refunds"]
+    net_total = by_category["net"].sum()
+    by_category["share"] = by_category["net"] / net_total if net_total else 0.0
+    by_category = by_category.sort_values(["net", "count"], ascending=False)
 
     merchants = spend.assign(merchant=spend["description"].map(normalize_key))
     top_merchants = (

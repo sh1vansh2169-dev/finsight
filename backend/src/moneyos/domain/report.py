@@ -49,6 +49,7 @@ def summary_dict(s: LedgerSummary) -> dict:
         "income": str(s.income),
         "expenses": str(s.expenses),
         "refunds": str(s.refunds),
+        "spending": str(s.spending),
         "unclassified_inflow": str(s.unclassified_inflow),
         "unclassified_outflow": str(s.unclassified_outflow),
         "transfers_in": str(s.transfers_in),
@@ -58,6 +59,8 @@ def summary_dict(s: LedgerSummary) -> dict:
             month: {
                 "income": str(m.income),
                 "expenses": str(m.expenses),
+                "refunds": str(m.refunds),
+                "spending": str(m.spending),
                 "inflow": str(m.inflow),
                 "outflow": str(m.outflow),
                 "net_cash_flow": str(m.net_cash_flow),
@@ -65,6 +68,7 @@ def summary_dict(s: LedgerSummary) -> dict:
             for month, m in s.by_month.items()
         },
         "expenses_by_category": {c: str(v) for c, v in s.expenses_by_category.items()},
+        "spending_by_category": {c: str(v) for c, v in s.spending_by_category.items()},
         "largest_expenses": [transaction_dict(t) for t in s.largest_expenses],
         "warnings": s.quality.warnings(),
     }
@@ -133,21 +137,22 @@ def render_text(result: PipelineResult) -> str:
             f"    refunds           {_money(s.refunds):>14}",
             f"    unclassified      {_money(s.unclassified_inflow):>14}",
             f"  Money out           {_money(s.outflow):>14}",
-            f"    expenses          {_money(s.expenses):>14}",
+            f"    purchases         {_money(s.expenses):>14}",
             f"    unclassified      {_money(s.unclassified_outflow):>14}",
             f"  Net cash flow       {_money(s.net_cash_flow):>14}",
+            f"  Spending after refunds {_money(s.spending):>11}",
             f"  Own-account transfers in {_money(s.transfers_in)}, out {_money(s.transfers_out)} (excluded)",
             "",
-            "  Month           income       expenses  net cash flow",
+            "  Month           income       spending  net cash flow",
         ]
         lines += [
-            f"  {month}  {_money(m.income):>14} {_money(m.expenses):>14} {_money(m.net_cash_flow):>14}"
+            f"  {month}  {_money(m.income):>14} {_money(m.spending):>14} {_money(m.net_cash_flow):>14}"
             for month, m in s.by_month.items()
         ]
-        lines += ["", "  Expenses by category"]
+        lines += ["", "  Spending by category (after refunds)"]
         lines += [
             f"  {category:<16}{_money(value):>14}"
-            for category, value in s.expenses_by_category.items()
+            for category, value in s.spending_by_category.items()
         ]
         lines += ["", "  Largest expenses"]
         lines += [

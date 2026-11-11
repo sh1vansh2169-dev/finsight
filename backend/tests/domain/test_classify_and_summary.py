@@ -198,3 +198,20 @@ def test_mixed_currencies_are_never_added_together(make_txn):
     assert list(by_currency) == ["INR", "USD"]
     assert by_currency["INR"].expenses == Decimal("10.00")
     assert by_currency["USD"].expenses == Decimal("3.00")
+
+
+def test_refunds_reduce_spending_in_their_category(ledger, make_txn):
+    s = summarize(ledger)
+    # Groceries purchases 50.25 + 75.50 + 5.00 pending = 130.75, minus a 20.00 refund.
+    assert s.spending == s.expenses - s.refunds == Decimal("925.75")
+    assert s.spending_by_category["Groceries"] == Decimal("110.75")
+    assert s.expenses_by_category["Groceries"] == Decimal("130.75")  # purchases unchanged
+    assert sum(s.spending_by_category.values()) == s.spending
+    assert s.by_month["2026-02"].spending == s.by_month["2026-02"].expenses - Decimal("20.00")
+
+
+def test_refund_only_category_goes_negative_rather_than_vanishing(make_txn):
+    refund = make_txn("2026-04-02", "SHOPKART REFUND", "300.00", txn_type=TxnType.REFUND, category="Shopping")
+    s = summarize([refund])
+    assert s.spending_by_category == {"Shopping": Decimal("-300.00")}
+    assert s.spending == Decimal("-300.00")

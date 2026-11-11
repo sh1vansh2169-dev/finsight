@@ -64,7 +64,7 @@ def monthly_in_out(monthly: pd.DataFrame, currency: str, path: Path) -> Path:
     x = np.arange(len(labels))
     width = 0.32
     income = monthly["income"] / 100
-    expenses = monthly["expenses"] / 100
+    expenses = monthly["spending"] / 100
     ax.bar(x - width / 2 - 0.02, income, width, color=MONEY_IN, label="Income")
     ax.bar(x + width / 2 + 0.02, expenses, width, color=MONEY_OUT, label="Spending")
     # Say how complete each month is under its label: a partly covered month
@@ -85,15 +85,15 @@ def monthly_in_out(monthly: pd.DataFrame, currency: str, path: Path) -> Path:
 
 def spending_by_category(by_category: pd.DataFrame, currency: str, path: Path, top: int = 8) -> Path:
     """Horizontal bars, largest first, one hue (magnitude, not identity)."""
-    data = by_category["total"].head(top)[::-1] / 100
+    data = by_category["net"].head(top)[::-1] / 100
     fig, ax = plt.subplots(figsize=(8, 0.45 * len(data) + 1.4))
     ax.barh(data.index, data.to_numpy(), height=0.55, color=MONEY_IN)
-    total = by_category["total"].sum() / 100
+    total = by_category["net"].sum() / 100
     for y, value in enumerate(data.to_numpy()):
         ax.text(value, y, f"  {value:,.0f}  ({value / total:.0%})", va="center", fontsize=8, color=INK_SECONDARY)
-    ax.set_xlim(0, data.max() * 1.3)
+    ax.set_xlim(min(0, data.min() * 1.3), data.max() * 1.3)
     _money_axis(ax, "x")
-    _style(ax, "Spending by category", f"Recorded spending in {currency}; share of all spending in brackets.")
+    _style(ax, "Spending by category", f"Recorded spending after refunds, in {currency}; share in brackets.")
     ax.grid(axis="y", visible=False)
     ax.grid(axis="x", color=GRID, linewidth=0.8)
     ax.tick_params(axis="y", colors=INK_SECONDARY)
@@ -105,15 +105,18 @@ def daily_spending(daily: pd.DataFrame, currency: str, path: Path) -> Path:
     line). Days without any statement get a grey band and no column."""
     fig, ax = plt.subplots(figsize=(8, 3.4))
     days = daily.index.to_timestamp()
-    ax.bar(days, (daily["expenses"] / 100).fillna(0), width=0.7, color=MONEY_OUT)
+    ax.bar(days, (daily["spending"] / 100).fillna(0), width=0.7, color=MONEY_OUT)
     unknown = (daily["coverage"] == 0).to_numpy()
     if unknown.any():
         ax.fill_between(days, 0, 1, where=unknown, transform=ax.get_xaxis_transform(), color=NO_DATA, step="mid",
                         zorder=0, label="No statement for these days")
         ax.legend(frameon=False, fontsize=8, labelcolor=INK_SECONDARY, loc="upper right")
-    ax.set_ylim(bottom=0)
+    if (daily["spending"].fillna(0) >= 0).all():
+        ax.set_ylim(bottom=0)
+    else:
+        ax.axhline(0, color=BASELINE, linewidth=0.8)  # a refund day goes below the line
     ax.xaxis.set_major_locator(matplotlib.dates.AutoDateLocator(minticks=4, maxticks=8))
     ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%d %b"))
     _money_axis(ax)
-    _style(ax, "Daily spending", f"Recorded spending in {currency}. Grey days are unknown, not zero.")
+    _style(ax, "Daily spending", f"Recorded spending after refunds, in {currency}. Grey days are unknown, not zero.")
     return _save(fig, path)

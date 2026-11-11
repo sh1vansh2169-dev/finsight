@@ -91,7 +91,12 @@ def test_spending_statistics(loaded):
     body = loaded.get("/api/v1/analytics/spending").json()
     summary = loaded.get("/api/v1/summary").json()["currencies"]["INR"]
     assert _d(body["total"]) == _d(summary["expenses"])
-    assert sum(_d(c["total"]) for c in body["by_category"]) == _d(body["total"])
+    assert sum(_d(c["purchases"]) for c in body["by_category"]) == _d(body["total"])
+    # Refunds reduce spending in their own category (Shopkart refund -> Shopping).
+    assert sum(_d(c["spending"]) for c in body["by_category"]) == _d(summary["spending"])
+    shopping = next(c for c in body["by_category"] if c["category"] == "Shopping")
+    assert _d(shopping["refunds"]) == Decimal("499.00")
+    assert _d(shopping["spending"]) == _d(shopping["purchases"]) - Decimal("499.00")
     assert sum(c["share"] for c in body["by_category"]) == pytest.approx(1, abs=1e-3)
     assert sum(_d(w["total"]) for w in body["by_weekday"]) == _d(body["total"])
     assert body["by_category"][0]["category"] == "Housing"  # rent is the largest
@@ -205,3 +210,22 @@ def test_budgets_ignore_confirmed_duplicates(loaded):
     loaded.post(f"/api/v1/review/duplicates/{item['id']}/resolve",
                 json={"decision": "duplicate", "keep_transaction_id": bank["id"]})
     assert spent(month) == before + Decimal(app["amount"])  # app amount is negative: one copy removed
+
+
+def test_refund_reduces_budget_spending(loaded):
+    loaded.put("/api/v1/budgets", json={"category": "Shopping", "monthly_limit": "100000"})
+
+    def spent():
+        usage = loaded.get("/api/v1/budgets/usage", params={"month": "2026-03"}).json()
+        return Decimal(next(u for u in usage if u["category"] == "Shopping")["spent"])
+
+    before = spent()
+    refund = loaded.post("/api/v1/transactions", json={
+        "date": "2026-03-10", "description": "ShopKart refund", "amount": "250.00", "direction": "credit",
+        "account": "Sample Card 4321", "txn_type": "refund", "category": "Shopping",
+    })
+    assert refund.status_code == 201, refund.text
+    assert spent() == before - Decimal("250.00")
+    summary = loaded.get("/api/v1/summary", params={"start": "2026-03-01", "end": "2026-03-31"}).json()
+    inr = summary["currencies"]["INR"]
+    assert _d(inr["spending"]) == _d(inr["expenses"]) - _d(inr["refunds"])

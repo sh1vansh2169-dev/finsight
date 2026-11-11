@@ -59,6 +59,8 @@ def test_monthly_series_agrees_with_the_ledger_summary(seed, tmp_path):
         assert row["income"] == expected.income * 100
         assert row["expenses"] == expected.expenses * 100
         assert row["net_cash_flow"] == expected.net_cash_flow * 100
+        assert row["refunds"] == expected.refunds * 100
+        assert row["spending"] == expected.spending * 100
     assert monthly["net_cash_flow"].sum() == summary.net_cash_flow * 100
 
 
@@ -267,3 +269,17 @@ def test_charts_render_with_and_without_gaps(tmp_path, make_txn):
         ]
         for path in paths:
             assert path.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_stats_net_refunds_per_category(make_txn):
+    rows = [
+        _t(make_txn, "2026-01-05", "-500.00", category="Shopping"),
+        _t(make_txn, "2026-01-06", "120.00", TxnType.REFUND, category="Shopping"),
+        _t(make_txn, "2026-01-07", "80.00", TxnType.REFUND, category="Travel"),  # refund with no purchase
+        _t(make_txn, "2026-01-08", "-300.00", category="Food"),
+    ]
+    by_category = spending_stats(transactions_frame(rows)).by_category
+    assert by_category.loc["Shopping", ["total", "refunds", "net"]].tolist() == [50000, 12000, 38000]
+    assert by_category.loc["Travel", ["count", "total", "refunds", "net"]].tolist() == [0, 0, 8000, -8000]
+    assert list(by_category.index) == ["Shopping", "Food", "Travel"]  # by net, largest first
+    assert by_category["share"].sum() == pytest.approx(1.0)

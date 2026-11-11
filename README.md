@@ -11,7 +11,7 @@ the foundation for later analytics, forecasting and ML work.
 
 ## What works today
 
-All of this is covered by automated tests (244 passing at the last run; see
+All of this is covered by automated tests (249 passing at the last run; see
 [DEVELOPMENT.md](docs/DEVELOPMENT.md) to run them yourself).
 
 | Area | Implemented |
@@ -27,7 +27,7 @@ All of this is covered by automated tests (244 passing at the last run; see
 | Reports | `moneyos report`: Markdown report with charts, including what it cannot tell you |
 | Ledger | Unified schema, integer minor units, transaction types (expense, income, transfer, refund, lent, borrowed, repayments, reversal, unknown), provenance of every classification |
 | Manual entry & corrections | Cash/manual transactions; user corrections of type and category with an audit trail |
-| Summaries | Recorded inflow/outflow/net, income, expenses, refunds, unclassified money, transfers, by month and category, data-quality warnings |
+| Summaries | Recorded inflow/outflow/net, income, spending after refunds (refunds reduce spending in their category), unclassified money, transfers, by month and category, data-quality warnings |
 | API | FastAPI backend with OpenAPI docs at `/docs` |
 | Data separation | Sample and real data live in separate, stamped databases that refuse to be mixed |
 

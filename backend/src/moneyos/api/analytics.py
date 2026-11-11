@@ -37,7 +37,9 @@ class SeriesPointOut(BaseModel):
     start: date
     end: date
     income: Decimal | None
-    expenses: Decimal | None
+    expenses: Decimal | None = Field(description="Purchases, before refunds.")
+    refunds: Decimal | None
+    spending: Decimal | None = Field(description="Purchases minus refunds.")
     inflow: Decimal | None
     outflow: Decimal | None
     net_cash_flow: Decimal | None
@@ -112,7 +114,10 @@ def _points(series: pd.DataFrame, currency: str | None) -> list[SeriesPointOut]:
             start=period.start_time.date(),
             end=period.end_time.date(),
             coverage=round(float(row["coverage"]), 4),
-            **{k: to_money(row[k], currency) for k in ("income", "expenses", "inflow", "outflow", "net_cash_flow")},
+            **{
+                k: to_money(row[k], currency)
+                for k in ("income", "expenses", "refunds", "spending", "inflow", "outflow", "net_cash_flow")
+            },
         )
         for period, row in series.iterrows()
     ]
@@ -192,7 +197,8 @@ def spending(
         "standard_deviation": money_round(stats.std_minor),
         "p90": money_round(stats.p90_minor),
         "by_category": [
-            {"category": name, "count": int(r["count"]), "total": money(r["total"]),
+            {"category": name, "count": int(r["count"]), "purchases": money(r["total"]),
+             "refunds": money(r["refunds"]), "spending": money(r["net"]),
              "median": money_round(r["median"]), "share": round(float(r["share"]), 4)}
             for name, r in stats.by_category.iterrows()
         ],

@@ -76,6 +76,9 @@ class FileImport:
     transactions: list[Transaction] = field(default_factory=list)
     rejected: list[RejectedRow] = field(default_factory=list)
     blank_rows: int = 0
+    # Original cells of every non-blank row, by line number, kept for
+    # traceability and so rows can be reprocessed if the rules improve.
+    raw_rows: dict[int, dict[str, str]] = field(default_factory=dict)
 
     @property
     def total_rows(self) -> int:
@@ -172,6 +175,7 @@ def import_text(
         if not any(v.strip() for v in raw.values()):
             result.blank_rows += 1
             continue
+        result.raw_rows[reader.line_num] = raw
 
         try:
             description = clean_description(get("description"))

@@ -1,7 +1,8 @@
 """Daily / weekly / monthly cash-flow series, coverage-aware.
 
-Each period gets income, expenses, inflow, outflow and net cash flow (in
-minor units), plus ``coverage``: the average fraction of statement-backed
+Each period gets income, expenses (purchases), refunds, spending
+(purchases minus refunds), inflow, outflow and net cash flow (in minor
+units), plus ``coverage``: the average fraction of statement-backed
 accounts covering the period's days. Periods with zero coverage get missing
 values (NaN) rather than zero, because nothing is known about them; partly
 covered periods keep their observed totals, which may be understated.
@@ -22,7 +23,7 @@ from moneyos.domain.models import TxnType
 Granularity = Literal["day", "week", "month"]
 # Weeks start on Monday (ISO); months are calendar months.
 _PERIOD = {"day": "D", "week": "W-SUN", "month": "M"}
-VALUE_COLUMNS = ["income", "expenses", "inflow", "outflow", "net_cash_flow"]
+VALUE_COLUMNS = ["income", "expenses", "refunds", "spending", "inflow", "outflow", "net_cash_flow"]
 
 
 def _daily_values(frame: pd.DataFrame, days: pd.DatetimeIndex) -> pd.DataFrame:
@@ -33,13 +34,15 @@ def _daily_values(frame: pd.DataFrame, days: pd.DatetimeIndex) -> pd.DataFrame:
             "date": rows["date"],
             "income": amount.where(rows["txn_type"] == TxnType.INCOME.value, 0),
             "expenses": (-amount).where(rows["txn_type"] == TxnType.EXPENSE.value, 0),
+            "refunds": amount.where(rows["txn_type"] == TxnType.REFUND.value, 0),
             "inflow": amount.clip(lower=0),
             "outflow": (-amount).clip(lower=0),
             "net_cash_flow": amount,
         }
     )
+    parts["spending"] = parts["expenses"] - parts["refunds"]
     daily = parts.groupby("date").sum()
-    return daily.reindex(days, fill_value=0).astype("int64")
+    return daily.reindex(days, fill_value=0).astype("int64")[VALUE_COLUMNS]
 
 
 def cash_flow_series(

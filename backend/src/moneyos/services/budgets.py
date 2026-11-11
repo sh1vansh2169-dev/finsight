@@ -64,20 +64,22 @@ def month_bounds(year: int, month: int) -> tuple[date, date]:
 
 
 def spent_in_month(session: Session, category: str, currency: str, year: int, month: int) -> Decimal:
-    """Recorded expenses in a category; failed payments and confirmed duplicates excluded."""
+    """Purchases minus refunds in a category; failed payments and confirmed duplicates excluded."""
     start, end = month_bounds(year, month)
-    minor = session.scalar(
-        select(func.coalesce(func.sum(TransactionRecord.amount_minor), 0)).where(
-            TransactionRecord.category == category,
-            TransactionRecord.currency == currency,
-            TransactionRecord.txn_type == TxnType.EXPENSE.value,
-            TransactionRecord.direction == "debit",
-            TransactionRecord.status != Status.FAILED.value,
-            TransactionRecord.duplicate_of_id.is_(None),
-            TransactionRecord.occurred_on.between(start, end),
+
+    def total(txn_type: TxnType) -> int:
+        return session.scalar(
+            select(func.coalesce(func.sum(TransactionRecord.amount_minor), 0)).where(
+                TransactionRecord.category == category,
+                TransactionRecord.currency == currency,
+                TransactionRecord.txn_type == txn_type.value,
+                TransactionRecord.status != Status.FAILED.value,
+                TransactionRecord.duplicate_of_id.is_(None),
+                TransactionRecord.occurred_on.between(start, end),
+            )
         )
-    )
-    return from_minor(int(minor), currency)
+
+    return from_minor(int(total(TxnType.EXPENSE) - total(TxnType.REFUND)), currency)
 
 
 def utilisation(session: Session, year: int, month: int, as_of: date | None = None) -> list[BudgetUse]:

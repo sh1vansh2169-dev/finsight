@@ -97,8 +97,10 @@ and `day_first` record the options used.
 
 ## `import_rows`
 
-Staged rows. `payload` (JSON) holds the normalised transaction for valid
-rows; `raw` (JSON) holds the original cells for rejected rows only.
+Staged rows. `raw` (JSON) holds the original cells of every imported row,
+so each ledger entry can be traced back to exactly what the file said and
+rows can be reprocessed if the rules improve. `payload` (JSON) holds the
+normalised transaction for valid rows.
 `reason` explains rejections and duplicate decisions. Rows are deleted when
 a preview is discarded.
 

@@ -109,8 +109,9 @@ class ImportBatch(Base):
 class ImportRow(Base):
     """A staged row from an import, with its outcome.
 
-    Valid rows keep the normalised transaction (``payload``); rejected rows
-    keep the raw cells (``raw``) so the error report can show them.
+    Every row keeps its original cells (``raw``) for traceability and
+    reprocessing; valid rows also keep the normalised transaction
+    (``payload``).
     """
 
     __tablename__ = "import_rows"

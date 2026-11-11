@@ -15,6 +15,11 @@ Definitions (all amounts are positive magnitudes unless noted):
   income or expenses. Hence: inflow = income + refunds + borrowed +
   repayments received + reversals in + unclassified in, and likewise for
   outflow.
+* spending = expenses - refunds. A refund reduces spending in its own
+  category rather than counting as income. A refund is not yet linked to
+  the purchase it reverses, so a refund arriving in a later month reduces
+  that later month, and a category can show negative spending for a period
+  in which it only received refunds.
 """
 
 from __future__ import annotations
@@ -36,6 +41,11 @@ class MonthSummary:
     expenses: Decimal = ZERO
     inflow: Decimal = ZERO
     outflow: Decimal = ZERO
+    refunds: Decimal = ZERO
+
+    @property
+    def spending(self) -> Decimal:
+        return self.expenses - self.refunds
 
     @property
     def net_cash_flow(self) -> Decimal:
@@ -85,8 +95,10 @@ class LedgerSummary:
     # TxnType -> total magnitude, excluding transfers and failed transactions.
     by_type: dict[TxnType, Decimal] = field(default_factory=dict)
     by_month: dict[str, MonthSummary] = field(default_factory=dict)
-    # Category -> spend, largest first. Sums to ``expenses``.
+    # Category -> purchases, largest first. Sums to ``expenses``.
     expenses_by_category: dict[str, Decimal] = field(default_factory=dict)
+    # Category -> purchases minus refunds, largest first. Sums to ``spending``.
+    spending_by_category: dict[str, Decimal] = field(default_factory=dict)
     largest_expenses: list[Transaction] = field(default_factory=list)
     quality: DataQuality = field(default_factory=DataQuality)
     unclassified_inflow: Decimal = ZERO
@@ -108,6 +120,11 @@ class LedgerSummary:
     def refunds(self) -> Decimal:
         return self.by_type.get(TxnType.REFUND, ZERO)
 
+    @property
+    def spending(self) -> Decimal:
+        """Purchases minus refunds."""
+        return self.expenses - self.refunds
+
 
 def summarize(transactions: Iterable[Transaction], *, top_n: int = 5) -> LedgerSummary:
     """Summarise transactions that all share one currency."""
@@ -123,6 +140,7 @@ def summarize(transactions: Iterable[Transaction], *, top_n: int = 5) -> LedgerS
     by_type: dict[TxnType, Decimal] = defaultdict(lambda: ZERO)
     months: dict[str, dict[str, Decimal]] = defaultdict(lambda: defaultdict(lambda: ZERO))
     categories: dict[str, Decimal] = defaultdict(lambda: ZERO)
+    category_refunds: dict[str, Decimal] = defaultdict(lambda: ZERO)
     spending: list[Transaction] = []
     quality = defaultdict(int)
 
@@ -162,6 +180,9 @@ def summarize(transactions: Iterable[Transaction], *, top_n: int = 5) -> LedgerS
             spending.append(t)
             if t.category == UNCATEGORIZED:
                 quality["uncategorized_expenses"] += 1
+        elif t.txn_type == TxnType.REFUND:
+            month["refunds"] += magnitude
+            category_refunds[t.category] += magnitude
         elif t.txn_type == TxnType.UNKNOWN:
             quality["unknown_type"] += 1
             if t.direction == Direction.CREDIT:
@@ -182,6 +203,12 @@ def summarize(transactions: Iterable[Transaction], *, top_n: int = 5) -> LedgerS
         by_month={m: MonthSummary(**months[m]) for m in sorted(months)},
         expenses_by_category=dict(
             sorted(categories.items(), key=lambda item: (-item[1], item[0]))
+        ),
+        spending_by_category=dict(
+            sorted(
+                ((c, categories[c] - category_refunds[c]) for c in categories.keys() | category_refunds.keys()),
+                key=lambda item: (-item[1], item[0]),
+            )
         ),
         largest_expenses=sorted(spending, key=lambda t: (t.amount, t.date))[:top_n],
         quality=DataQuality(**quality),

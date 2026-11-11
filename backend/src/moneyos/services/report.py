@@ -49,9 +49,10 @@ def write_report(session: Session, out: Path, *, currency: str | None = None, sa
             ["of which income", f"{summary.income:,.2f}"],
             ["of which unclassified", f"{summary.unclassified_inflow:,.2f}"],
             ["Money out", f"{summary.outflow:,.2f}"],
-            ["of which spending", f"{summary.expenses:,.2f}"],
+            ["of which purchases", f"{summary.expenses:,.2f}"],
             ["of which unclassified", f"{summary.unclassified_outflow:,.2f}"],
             ["Net cash flow", f"{summary.net_cash_flow:,.2f}"],
+            ["Spending after refunds", f"{summary.spending:,.2f}"],
         ]),
         "",
     ]
@@ -93,8 +94,9 @@ def write_report(session: Session, out: Path, *, currency: str | None = None, sa
             f"{_money(stats.p90_minor, currency)}.", "",
         ]
         lines += _table(
-            ["Category", "Payments", "Total", "Share"],
-            [[name, str(int(r["count"])), _money(r["total"], currency), f"{r['share']:.1%}"]
+            ["Category", "Payments", "Purchases", "Refunds", "Spending", "Share"],
+            [[name, str(int(r["count"])), _money(r["total"], currency), _money(r["refunds"], currency),
+              _money(r["net"], currency), f"{r['share']:.1%}"]
              for name, r in stats.by_category.iterrows()],
         )
         lines += ["", "### By day of the week (days with statement coverage only)", ""]

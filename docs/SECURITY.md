@@ -15,7 +15,7 @@ store real financial data in it on a shared machine.**
 | No secrets in code | Configuration via environment variables; `.env` files are git-ignored; `.env.example` holds no values |
 | Logging | Access logs are off (query strings can contain merchant names). The application logs no transaction content |
 | Errors | Error responses carry a short message, never a stack trace |
-| Data minimisation | Raw CSV cells are stored only for rejected rows; discarding a preview deletes its staged rows |
+| Data minimisation | Only the uploaded rows are kept (the file itself is not stored). Original cells are kept per row for traceability (a FinSight requirement); discarding a preview deletes its staged rows |
 | Sample/real separation | Databases are stamped with their data mode and refuse to be mixed |
 | CSV formula injection | Exported text cells starting with `=`, `+`, `-`, `@`, tab or CR are prefixed with `'` so spreadsheets show them as text; amounts are left untouched |
 | No silent merges | Possible duplicates are never removed automatically; each merge is a user decision, audited and reversible |

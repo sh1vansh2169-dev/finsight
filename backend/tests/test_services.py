@@ -327,3 +327,16 @@ def test_unstamped_database_with_data_is_refused(session, rules, database_url):
     session.commit()
     with pytest.raises(DataModeError, match="no data-mode stamp"):
         init_db(database_url, DataMode.REAL)
+
+
+def test_original_cells_are_kept_for_every_row(session, rules):
+    text = (
+        "Date,Description,Amount\n"
+        "05/01/2026,  FreshMart   Groceries ,\"-1,450.00\"\n"
+        "06/01/2026,BAD,abc\n"
+    )
+    batch = _preview(session, rules, text)
+    good, bad = batch.rows
+    assert good.raw == {"Date": "05/01/2026", "Description": "  FreshMart   Groceries ", "Amount": "-1,450.00"}
+    assert good.payload["description"] == "FreshMart Groceries"  # cleaned copy alongside the original
+    assert bad.raw == {"Date": "06/01/2026", "Description": "BAD", "Amount": "abc"}

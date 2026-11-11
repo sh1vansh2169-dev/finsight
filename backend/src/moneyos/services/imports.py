@@ -114,7 +114,10 @@ def preview_import(
         blank_rows=imported.blank_rows,
     )
     rows = [
-        ImportRow(source_row=t.source_row, outcome=outcome, reason=reason, payload=to_payload(t))
+        ImportRow(
+            source_row=t.source_row, outcome=outcome, reason=reason, payload=to_payload(t),
+            raw=imported.raw_rows.get(t.source_row),
+        )
         for t, (outcome, reason) in zip(transactions, _outcomes(session, transactions))
     ]
     rows += [

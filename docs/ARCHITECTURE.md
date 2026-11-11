@@ -93,6 +93,22 @@ the code behaves as intended, not that the weights suit real data. Amounts
 must match exactly, so a fee-inclusive copy will not be proposed. Summaries
 warn while pairs are open, because totals may double-count until then.
 
+### Refunds reduce spending
+**Rule (from the FinSight spec).** A refund is not income: it reduces
+spending. `spending = purchases (expenses) - refunds`, per period and per
+category, everywhere spending is shown: summaries, the cash-flow series,
+category statistics, charts and budgets.
+**How.** A refund reduces spending in its own category (rules usually give
+"SHOPKART REFUND" the same category as "SHOPKART ONLINE STORE"). Gross
+purchases and refunds stay available separately, so money in and money
+out still reconcile exactly.
+**Limit.** Refunds are not yet linked to the purchase they reverse. A refund
+arriving the month after the purchase reduces the later month, and a
+category with only refunds in a period shows negative spending rather
+than hiding it. Linking refunds to their purchases is the same matching
+problem as duplicate review and is planned alongside transfer and reversal
+pairing.
+
 ### Analytics: unknown is not zero
 **Problem.** A day with no transactions means "nothing spent" only if a
 statement for that day was imported. Otherwise it means "we don't know".
