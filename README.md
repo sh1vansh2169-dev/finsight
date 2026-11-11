@@ -33,7 +33,7 @@ All of this is covered by automated tests (244 passing at the last run; see
 
 ## Not built yet
 
-See the [roadmap](#roadmap). In particular: no mobile app or any screens
+See the [roadmap](#roadmap). In particular: no web app or any screens
 (the dashboard exists as API data only), no Money Majra, no ML models, no
 forecasts, no
 payment-app integrations, no LLM assistant. **No ML model has been trained
@@ -68,7 +68,7 @@ backend/        Python package (FastAPI, SQLAlchemy) and its tests
   tests/
 data/synthetic/ generated sample statements (the only data that is committed)
 docs/           architecture, data dictionary, security, research and ML notes
-mobile/         (planned) Flutter app
+frontend/       (planned) React + TypeScript web app
 ```
 
 ## Documentation
@@ -79,6 +79,7 @@ mobile/         (planned) Flutter app
 - [SECURITY.md](docs/SECURITY.md): threat model and current limitations
 - [ML_EXPERIMENTS.md](docs/ML_EXPERIMENTS.md): experiment log (no ML yet; one heuristic baseline)
 - [UI_UX.md](docs/UI_UX.md): design requirements for the Phase 8 app
+- [FINSIGHT_SPEC.md](docs/FINSIGHT_SPEC.md): the FinSight spec and how it was merged
 - [RESEARCH_NOTES.md](docs/RESEARCH_NOTES.md): the research question and plan
 
 ## Roadmap
@@ -89,12 +90,16 @@ mobile/         (planned) Flutter app
 | 2 | CSV import and manual entry | **Done** (CSV formats beyond the supported layouts: planned) |
 | 3 | Normalisation, deduplication, ledger | **Done**: exact dedupe, near-duplicate review queue, audit trail. Open: transfer pairing between your own accounts, reversal pairing |
 | 4 | Dashboard and descriptive analytics (Pandas) | **Done** (data and API; the screens themselves are Phase 8) |
-| 5 | Money Majra (shared expenses, lending) | Not started; transaction types already exist |
-| 6 | Forecasting baselines and ML experiments | Not started |
-| 7 | Financial digital twin | Not started |
-| 8 | Mobile app (Flutter) and API integration | Blocked on local setup: Flutter is downloaded, but not on PATH and has no Android SDK |
-| 9 | Authorised source integrations | Not started; research first |
-| 10 | Optional LLM assistant | Not started |
-| 11 | Hardening, security review, release | Not started |
+| 5 | Money Majra: lending, borrowing, shared expenses, repayments, settlements | Not started; transaction types already exist |
+| 6 | ML and forecasting: categorisation (rules vs TF-IDF + Logistic Regression, Random Forest, XGBoost); forecasting (baselines vs exponential smoothing, SARIMA, Random Forest, XGBoost); anomaly detection (z-score vs Isolation Forest, LOF); spending clustering as research | Not started |
+| 7 | Recurring payment detection, commitments, financial digital twin (what-if), rule-based recommendations | Not started |
+| 8 | Web app: React + TypeScript + Tailwind; user accounts, login (JWT), per-user data isolation | Not started |
+| 9 | More sources: Excel and supported PDF statements; authorised integrations research (Account Aggregator) | Not started; research first |
+| 10 | LLM assistant with tool calling, answers grounded in backend calculations | Not started |
+| 11 | PostgreSQL + Docker deployment, security review, release | Not started |
+
+The FinSight specification was merged into this plan on 2026-11-11; see
+[docs/FINSIGHT_SPEC.md](docs/FINSIGHT_SPEC.md) for what was adopted, when, and
+what was kept from MoneyOS.
 
 All data in this repository is synthetic. Never commit real statements.

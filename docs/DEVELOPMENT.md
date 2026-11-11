@@ -6,8 +6,7 @@
 | --- | --- | --- |
 | Python | 3.14.8 (3.12+ supported by `pyproject.toml`) | Backend |
 | Git | 2.56 | Version control |
-| Flutter | 3.47.7 (downloaded, not yet on PATH) | Mobile app, Phase 8 |
-| Android Studio / SDK | not installed | Mobile app, Phase 8 |
+| Node.js | 24 | React web app, Phase 8 |
 
 ## Setup (Windows PowerShell, from the repo root)
 

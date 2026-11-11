@@ -53,14 +53,15 @@ developer analytics tool.
 
 ## Engineering approach
 
-Reusable Flutter components and one consistent design system (colour,
+React + TypeScript components styled with Tailwind (decided 2026-11-11,
+replacing Flutter) and one consistent design system (colour,
 type, spacing and shape tokens). Build incrementally, test at phone,
 tablet and desktop sizes, and connect each screen to the real backend as
 its module becomes available.
 
 ## Backend notes for the UI (collected as phases land)
 
-- Money arrives as decimal strings ("-120.00"); never parse to `double` for
+- Money arrives as decimal strings ("-120.00"); never convert to a JavaScript `Number` for
   arithmetic.
 - Every transaction carries `type_basis` / `category_basis`: show inferred
   values (basis `rule`) differently from confirmed ones (`source`, `user`).
