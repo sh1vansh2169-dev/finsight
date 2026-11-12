@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from moneyos.config import DataMode
 from moneyos.db.tables import AppMeta, ImportBatch, TransactionRecord
+from moneyos.db.tenancy import install
 
 # The schema as v0.2 created it, before migrations existed.
 BASELINE_REVISION = "0001"
@@ -51,13 +52,32 @@ def migrate(engine: Engine, revision: str = "head") -> None:
 
     A database created before migrations existed has the baseline tables but
     no ``alembic_version``; it is stamped as the baseline, then upgraded.
+
+    On SQLite, foreign-key enforcement is switched off while migrating (table
+    rebuilds drop tables that others reference) and the whole database is
+    then checked; any broken reference stops startup.
     """
-    with engine.begin() as connection:
-        tables = set(inspect(connection).get_table_names())
-        config = alembic_config(connection)
-        if "alembic_version" not in tables and "transactions" in tables:
-            command.stamp(config, BASELINE_REVISION)
-        command.upgrade(config, revision)
+    with engine.connect() as connection:
+        sqlite = connection.dialect.name == "sqlite"
+        if sqlite:
+            connection.exec_driver_sql("PRAGMA foreign_keys=OFF")  # must happen outside a transaction
+            connection.commit()
+        try:
+            with connection.begin():
+                tables = set(inspect(connection).get_table_names())
+                config = alembic_config(connection)
+                if "alembic_version" not in tables and "transactions" in tables:
+                    command.stamp(config, BASELINE_REVISION)
+                command.upgrade(config, revision)
+            if sqlite:
+                broken = connection.exec_driver_sql("PRAGMA foreign_key_check").fetchall()
+                connection.commit()
+                if broken:
+                    raise RuntimeError(f"migration left broken references: {broken[:5]}")
+        finally:
+            if sqlite:
+                connection.exec_driver_sql("PRAGMA foreign_keys=ON")
+                connection.commit()
 
 
 def ensure_data_mode(engine: Engine, mode: DataMode) -> None:
@@ -103,4 +123,4 @@ def init_db(database_url: str, mode: DataMode) -> sessionmaker[Session]:
     except BaseException:
         engine.dispose()
         raise
-    return sessionmaker(engine, expire_on_commit=False)
+    return install(sessionmaker(engine, expire_on_commit=False))

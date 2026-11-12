@@ -4,6 +4,8 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
+
+from conftest import sign_up
 from fastapi.testclient import TestClient
 
 from moneyos.api.app import create_app
@@ -17,6 +19,7 @@ BANNED = ("overspent", "overspending", "waste", "wasting", "bad", "irresponsible
 @pytest.fixture
 def client(database_url, dataset):
     client = TestClient(create_app(Settings(database_url=database_url)))
+    sign_up(client)
     for name, text in dataset.files.items():
         form = {"account": synthetic.CARD_ACCOUNT} if "card" in name else {}
         preview = client.post("/api/v1/imports/preview", files={"file": (name, text.encode(), "text/csv")}, data=form)
@@ -71,11 +74,14 @@ def test_confirmed_payments_leave_everyday_spending_exactly(client):
     """No double counting: confirming rent moves exactly the rent payments out of everyday spending."""
     from moneyos.services import planning
 
+    from moneyos.db.tenancy import user_session
+
     factory = client.app.state.session_factory
-    with factory() as session:
+    me = client.get("/api/v1/auth/me").json()["id"]
+    with user_session(factory, me) as session:
         before = planning._everyday(session, "INR", date(2026, 3, 27), 30)
     _confirm(client, "rent greenview apts")
-    with factory() as session:
+    with user_session(factory, me) as session:
         after = planning._everyday(session, "INR", date(2026, 3, 27), 30)
     removed = (before.per_day - after.per_day) * before.history_days
     assert abs(removed - Decimal("66000")) < before.history_days * Decimal("0.01")  # three rents, up to rounding

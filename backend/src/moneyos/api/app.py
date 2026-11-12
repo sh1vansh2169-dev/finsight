@@ -7,10 +7,11 @@ from fastapi.responses import JSONResponse
 
 from moneyos import __version__
 from moneyos.api import analytics as analytics_api
+from moneyos.api import auth as auth_api
 from moneyos.api import majra as majra_api
 from moneyos.api import ml as ml_api
 from moneyos.api import planning as planning_api
-from moneyos.api.deps import require_token
+from moneyos.api.deps import current_user
 from moneyos.api.routes import router
 from moneyos.api.schemas import HealthOut
 from moneyos.config import DataMode, Settings
@@ -23,6 +24,7 @@ from moneyos.services.errors import (
     NotFoundError,
     PayloadTooLargeError,
 )
+from moneyos.services.auth import AuthError, TooManyAttempts
 
 _ERROR_STATUS = {
     NotFoundError: status.HTTP_404_NOT_FOUND,
@@ -30,6 +32,8 @@ _ERROR_STATUS = {
     InvalidRequestError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     SchemaError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     PayloadTooLargeError: status.HTTP_413_CONTENT_TOO_LARGE,
+    AuthError: status.HTTP_401_UNAUTHORIZED,
+    TooManyAttempts: status.HTTP_429_TOO_MANY_REQUESTS,
 }
 
 
@@ -49,7 +53,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         def handler(_request: Request, error: Exception, code: int = code) -> JSONResponse:
             # Service error messages are written for users and never include
             # transaction contents beyond what the caller already sent.
-            return JSONResponse({"detail": str(error)}, status_code=code)
+            headers = {"WWW-Authenticate": "Bearer"} if code == status.HTTP_401_UNAUTHORIZED else None
+            return JSONResponse({"detail": str(error)}, status_code=code, headers=headers)
 
         app.add_exception_handler(error_type, handler)
 
@@ -61,9 +66,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             sample_data=settings.data_mode == DataMode.SAMPLE,
         )
 
-    app.include_router(router, prefix="/api/v1", dependencies=[Depends(require_token)])
-    app.include_router(analytics_api.router, prefix="/api/v1", dependencies=[Depends(require_token)])
-    app.include_router(majra_api.router, prefix="/api/v1", dependencies=[Depends(require_token)])
-    app.include_router(ml_api.router, prefix="/api/v1", dependencies=[Depends(require_token)])
-    app.include_router(planning_api.router, prefix="/api/v1", dependencies=[Depends(require_token)])
+    app.include_router(auth_api.router, prefix="/api/v1")
+    # Everything else needs a signed-in user, and sees only that user's data.
+    signed_in = [Depends(current_user)]
+    for module_router in (router, analytics_api.router, majra_api.router, ml_api.router, planning_api.router):
+        app.include_router(module_router, prefix="/api/v1", dependencies=signed_in)
     return app

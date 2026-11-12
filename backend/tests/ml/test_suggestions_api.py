@@ -2,6 +2,8 @@
 
 import numpy as np
 import pytest
+
+from conftest import sign_up
 from fastapi.testclient import TestClient
 
 from moneyos.api.app import create_app
@@ -23,7 +25,9 @@ def models_dir(tmp_path_factory):
 
 
 def _client(database_url, models_dir):
-    return TestClient(create_app(Settings(database_url=database_url, models_dir=models_dir)))
+    client = TestClient(create_app(Settings(database_url=database_url, models_dir=models_dir)))
+    sign_up(client)
+    return client
 
 
 @pytest.fixture

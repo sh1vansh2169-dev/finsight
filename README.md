@@ -5,13 +5,13 @@ bank and card statements, cleans and de-duplicates them, keeps a unified
 ledger with provenance for every value, and reports recorded totals. It is
 the foundation for later analytics, forecasting and ML work.
 
-> **Status: v0.7, early development.** Not production-ready and not
+> **Status: v0.8, early development.** Not production-ready and not
 > security-reviewed. Use synthetic data unless you understand
 > [SECURITY.md](docs/SECURITY.md).
 
 ## What works today
 
-All of this is covered by automated tests (785 passing at the last run, most of them property-based checks over random cases; see
+All of this is covered by automated tests (800 passing at the last run, most of them property-based checks over random cases; see
 [DEVELOPMENT.md](docs/DEVELOPMENT.md) to run them yourself).
 
 | Area | Implemented |
@@ -36,6 +36,7 @@ All of this is covered by automated tests (785 passing at the last run, most of 
 | Manual entry & corrections | Cash/manual transactions; user corrections of type and category with an audit trail |
 | Summaries | Recorded inflow/outflow/net, income, spending after refunds (refunds reduce spending in their category), unclassified money, transfers, by month and category, data-quality warnings |
 | API | FastAPI backend with OpenAPI docs at `/docs` |
+| Accounts and privacy | Sign-up, sign-in and sign-out; passwords hashed with scrypt; revocable sessions stored only as hashes; lockout after repeated failures; every user sees only their own data, enforced in the database layer; delete your account and all your data |
 | Data separation | Sample and real data live in separate, stamped databases that refuse to be mixed |
 
 ## Not built yet
@@ -54,6 +55,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pytest backend          # run the tests
 .\.venv\Scripts\moneyos.exe seed-sample               # load synthetic data into data/sample/
 .\.venv\Scripts\moneyos.exe serve --sample            # http://127.0.0.1:8000/docs
+# sign in with the account printed by seed-sample (see docs/DEVELOPMENT.md, Accounts)
 ```
 
 Other commands:
@@ -100,7 +102,7 @@ frontend/       (planned) React + TypeScript web app
 | 5 | Money Majra: lending, borrowing, shared expenses, repayments, settlements | **Done** (API; screens are Phase 8) |
 | 6 | ML and forecasting: categorisation, forecasting, anomaly detection, clustering, each against baselines | **Done on synthetic data** (experiments E1–E4). Shipped: category suggestions, unusual-payment flags. Not shipped: forecasting (no model beat the baselines), clustering. Next: research Models B–D |
 | 7 | Recurring payment detection, commitments, what-if simulator, rule-based recommendations | **Done** (API; screens are Phase 8). Research Models B–D are the next experiment |
-| 8 | Web app: React + TypeScript + Tailwind; user accounts, login (JWT), per-user data isolation | Not started |
+| 8 | Web app: React + TypeScript + Tailwind; user accounts, login, per-user data isolation | **In progress**: accounts and isolation done (8a); the web app itself is next (8b) |
 | 9 | More sources: Excel and supported PDF statements; authorised integrations research (Account Aggregator) | Not started; research first |
 | 10 | LLM assistant with tool calling, answers grounded in backend calculations | Not started |
 | 11 | PostgreSQL + Docker deployment, security review, release | Not started |

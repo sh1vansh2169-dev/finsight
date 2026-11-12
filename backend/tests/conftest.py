@@ -49,10 +49,31 @@ def session(database_url):
     from moneyos.config import DataMode
     from moneyos.db.session import init_db
 
+    from moneyos.db.tables import User
+    from moneyos.db.tenancy import system_session, user_session
+
     factory = init_db(database_url, DataMode.REAL)
-    with factory() as s:
+    with system_session(factory) as admin:
+        user = User(email="tester@example.com", password_hash=None)
+        admin.add(user)
+        admin.commit()
+        user_id = user.id
+    with user_session(factory, user_id) as s:
         yield s
     factory.kw["bind"].dispose()
+
+
+TEST_PASSWORD = "correct horse battery"
+
+
+def sign_up(client, email: str = "you@example.com", password: str = TEST_PASSWORD):
+    """Register (or log in) and make every later request on ``client`` carry the token."""
+    response = client.post("/api/v1/auth/register", json={"email": email, "password": password})
+    if response.status_code == 409:
+        response = client.post("/api/v1/auth/login", json={"email": email, "password": password})
+    assert response.status_code in (200, 201), response.text
+    client.headers["Authorization"] = f"Bearer {response.json()['token']}"
+    return response.json()
 
 
 @pytest.fixture(scope="session")

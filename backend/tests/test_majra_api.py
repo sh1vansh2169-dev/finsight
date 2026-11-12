@@ -3,6 +3,8 @@
 from decimal import Decimal
 
 import pytest
+
+from conftest import sign_up
 from fastapi.testclient import TestClient
 
 from moneyos.api.app import create_app
@@ -12,6 +14,7 @@ from moneyos.config import Settings
 @pytest.fixture
 def client(database_url):
     client = TestClient(create_app(Settings(database_url=database_url)))
+    sign_up(client)
     yield client
     client.app.state.session_factory.kw["bind"].dispose()
 

@@ -147,6 +147,30 @@ available money.
 expense you paid stays in your spending at the full amount; your
 "real" share is visible only in Money Majra.
 
+### Accounts and per-user isolation
+**Problem.** Once more than one person can sign in, a single forgotten
+`WHERE user_id = ...` in any query would leak someone's finances.
+**Choice.** Isolation is enforced below the features (`db/tenancy.py`).
+Every user-owned table has a `user_id`. Each database session states whose
+data it serves; a SQLAlchemy `do_orm_execute` hook adds
+`with_loader_criteria(user_id = ...)` to every ORM query (including lazy
+relationship loads), and a `before_flush` hook stamps new rows and refuses
+to save another user's row. A session that names no user cannot read user
+data at all; sign-in and admin commands use explicit "system" sessions.
+Services contain no user filters, and new features inherit isolation
+automatically.
+**A bug worth remembering.** The first version passed the user id to the
+filter through a Python `lambda`. SQLAlchemy caches lambda criteria and does
+not track default arguments, so the first user's id was reused for every
+later query: each user would have seen the first user's data. Tests that
+used one user at a time passed; it showed up only when two users queried
+in the same process. A regression test now alternates users deliberately.
+**Sessions** are opaque random tokens stored as SHA-256 hashes (revocable,
+no signing keys to manage) rather than JWTs; passwords use scrypt. See
+SECURITY.md.
+**Existing data** is kept: the migration to v0.8 creates an `owner@localhost`
+account without a password and assigns every existing row to it.
+
 ### Commitments and the what-if simulator
 **Recurring detection** (`analytics/recurring.py`) groups payments by a
 cleaned merchant name and accepts a series when at least 75% of the gaps

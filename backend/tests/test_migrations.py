@@ -63,7 +63,15 @@ def test_v02_database_is_stamped_upgraded_and_keeps_its_data(engine, database_ur
     assert "match_candidates" in inspect(engine).get_table_names()
     with engine.connect() as connection:
         row = connection.execute(text("SELECT description, amount_minor, duplicate_of_id FROM transactions")).one()
+        owner = connection.execute(text("SELECT id, email, password_hash FROM users")).one()
+        owners = {
+            table: connection.execute(text(f"SELECT DISTINCT user_id FROM {table}")).scalars().all()
+            for table in ("accounts", "transactions")
+        }
     assert tuple(row) == ("TEA", 1500, None)
+    # Existing data now belongs to an "owner" account with no password until one is set.
+    assert (owner.email, owner.password_hash) == ("owner@localhost", None)
+    assert owners == {"accounts": [owner.id], "transactions": [owner.id]}
 
 
 def test_wrong_mode_database_is_refused_before_it_is_changed(engine, database_url):

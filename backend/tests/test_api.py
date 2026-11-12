@@ -3,6 +3,8 @@
 from decimal import Decimal
 
 import pytest
+
+from conftest import sign_up
 from fastapi.testclient import TestClient
 
 from moneyos.api.app import create_app
@@ -20,6 +22,7 @@ def make_client(database_url):
     def _make(**settings) -> TestClient:
         settings.setdefault("database_url", database_url)
         client = TestClient(create_app(Settings(**settings)))
+        sign_up(client)
         clients.append(client)
         return client
 
@@ -53,7 +56,7 @@ def _load_sample(client, dataset):
 
 def test_health(client, make_client, tmp_path):
     assert client.get("/health").json() == {
-        "status": "ok", "version": "0.7.0", "data_mode": "real", "sample_data": False,
+        "status": "ok", "version": "0.8.0", "data_mode": "real", "sample_data": False,
     }
     sample = make_client(
         data_mode=DataMode.SAMPLE, database_url=f"sqlite:///{(tmp_path / 's.db').as_posix()}"
@@ -205,28 +208,21 @@ def test_correction_and_audit(client, dataset):
     assert client.patch("/api/v1/transactions/999", json={"category": "X"}).status_code == 404
 
 
-def test_api_token(make_client):
-    client = make_client(api_token="s3cret-token")
-    assert client.get("/health").status_code == 200  # no personal data
-    assert client.get("/api/v1/transactions").status_code == 401
-    assert client.get("/api/v1/transactions", headers={"Authorization": "Bearer wrong"}).status_code == 401
-    ok = client.get("/api/v1/transactions", headers={"Authorization": "Bearer s3cret-token"})
-    assert ok.status_code == 200
-
-
-def test_cli_serve_refuses_public_host_without_token(monkeypatch, capsys):
-    monkeypatch.delenv("MONEYOS_API_TOKEN", raising=False)
+def test_cli_serve_refuses_a_network_address_without_opting_in(capsys):
     assert main(["serve", "--host", "0.0.0.0"]) == 2
-    assert "non-loopback" in capsys.readouterr().err
+    assert "plain HTTP" in capsys.readouterr().err
 
 
 def test_cli_seed_sample_creates_a_separate_sample_database(tmp_path, capsys):
     url = f"sqlite:///{(tmp_path / 'sample.db').as_posix()}"
     assert main(["seed-sample", "--database", url]) == 0
-    assert synthetic.SAMPLE_MARKER in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert synthetic.SAMPLE_MARKER in out
+    password = out.split("with password ")[1].split()[0]  # printed once for the new sample account
 
     sample_client = TestClient(create_app(Settings(data_mode=DataMode.SAMPLE, database_url=url)))
     try:
+        sign_up(sample_client, "sample@moneyos.local", password)
         assert sample_client.get("/api/v1/summary").json()["sample_data"] is True
     finally:
         sample_client.app.state.session_factory.kw["bind"].dispose()

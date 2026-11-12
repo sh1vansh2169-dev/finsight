@@ -66,17 +66,51 @@ class AppMeta(Base):
     value: Mapped[str] = mapped_column(String(256))
 
 
-class Account(Base):
-    __tablename__ = "accounts"
+class User(Base):
+    """A person with their own, isolated data."""
+
+    __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(100), unique=True)
+    email: Mapped[str] = mapped_column(String(254), unique=True)
+    # None for an account that has not been given a password yet (the owner
+    # created when an existing single-user database is upgraded).
+    password_hash: Mapped[str | None] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now)
+
+
+class AuthSession(Base):
+    """A sign-in. Only a hash of the token is stored; the token itself is shown once."""
+
+    __tablename__ = "auth_sessions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now)
+    expires_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    revoked_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+
+
+class Owned:
+    """Rows that belong to one user. Queries are restricted to the signed-in
+    user automatically (see db/tenancy.py)."""
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+
+
+class Account(Owned, Base):
+    __tablename__ = "accounts"
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_accounts_user_name"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
     kind: Mapped[str] = mapped_column(String(20), default="other")
     currency: Mapped[str] = mapped_column(String(3))
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now)
 
 
-class ImportBatch(Base):
+class ImportBatch(Owned, Base):
     """One uploaded file: previewed first, then committed or discarded."""
 
     __tablename__ = "import_batches"
@@ -132,7 +166,7 @@ class ImportRow(Base):
     batch: Mapped[ImportBatch] = relationship(back_populates="rows")
 
 
-class TransactionRecord(Base):
+class TransactionRecord(Owned, Base):
     __tablename__ = "transactions"
     __table_args__ = (
         CheckConstraint("amount_minor > 0", name="ck_amount_positive"),
@@ -178,7 +212,7 @@ class TransactionRecord(Base):
     account: Mapped[Account] = relationship()
 
 
-class MatchCandidate(Base):
+class MatchCandidate(Owned, Base):
     """A pair of transactions that may be the same real-world payment.
 
     Created by the matcher, resolved only by the user. ``transaction_a_id``
@@ -207,13 +241,13 @@ class MatchCandidate(Base):
     transaction_b: Mapped[TransactionRecord] = relationship(foreign_keys=[transaction_b_id])
 
 
-class Budget(Base):
+class Budget(Owned, Base):
     """A monthly spending limit for one category in one currency."""
 
     __tablename__ = "budgets"
     __table_args__ = (
         CheckConstraint("limit_minor > 0", name="ck_budget_positive"),
-        UniqueConstraint("category", "currency", name="uq_budget_category_currency"),
+        UniqueConstraint("user_id", "category", "currency", name="uq_budget_user_category_currency"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -224,22 +258,23 @@ class Budget(Base):
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now, onupdate=utc_now)
 
 
-class MajraPerson(Base):
+class MajraPerson(Owned, Base):
     """Someone you share costs with or lend to. Exactly one row is you."""
 
     __tablename__ = "majra_people"
     __table_args__ = (
         Index(
-            "uq_majra_people_me",
-            "is_me",
+            "uq_majra_people_user_me",
+            "user_id",
             unique=True,
             sqlite_where=text("is_me = 1"),
             postgresql_where=text("is_me"),
         ),
+        UniqueConstraint("user_id", "name", name="uq_majra_people_user_name"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(100), unique=True)
+    name: Mapped[str] = mapped_column(String(100))
     is_me: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now)
 
@@ -251,7 +286,7 @@ class MajraGroupMember(Base):
     person_id: Mapped[int] = mapped_column(ForeignKey("majra_people.id"), primary_key=True)
 
 
-class MajraGroup(Base):
+class MajraGroup(Owned, Base):
     """A set of people whose shared costs are settled together.
 
     ``direct`` groups hold one-to-one lending between you and one person.
@@ -269,7 +304,7 @@ class MajraGroup(Base):
     members: Mapped[list[MajraPerson]] = relationship(secondary="majra_group_members", order_by="MajraPerson.id")
 
 
-class MajraEntry(Base):
+class MajraEntry(Owned, Base):
     """A shared expense, a loan or a payment. Corrected by voiding, never deleted."""
 
     __tablename__ = "majra_entries"
@@ -310,7 +345,7 @@ class MajraShare(Base):
     share_minor: Mapped[int] = mapped_column(BigInteger)
 
 
-class Commitment(Base):
+class Commitment(Owned, Base):
     """A known future payment or income: confirmed from a detected pattern, or added by hand."""
 
     __tablename__ = "commitments"
@@ -342,7 +377,7 @@ class Commitment(Base):
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now, onupdate=utc_now)
 
 
-class AuditEvent(Base):
+class AuditEvent(Owned, Base):
     """Append-only record of imports, manual entries and corrections."""
 
     __tablename__ = "audit_events"

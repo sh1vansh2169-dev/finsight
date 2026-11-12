@@ -97,7 +97,7 @@ Group balances always sum to zero.
 ## `alembic_version`
 
 Current schema revision, managed by Alembic. `0001` is the v0.2 schema,
-`0002` adds duplicate review, `0003` adds budgets, `0004` adds Money Majra, `0005` adds commitments.
+`0002` adds duplicate review, `0003` adds budgets, `0004` adds Money Majra, `0005` adds commitments, `0006` adds users and per-user ownership.
 
 ## Analytics outputs (not stored)
 
@@ -107,6 +107,20 @@ Current schema revision, managed by Alembic. `0001` is the v0.2 schema,
 | amounts in a series point | `null` when `coverage` is 0: unknown, not zero |
 | `projected_month_total` | Estimate: spending so far scaled to the whole month; only from day 7 of the current month |
 | `share` (by category) | Category spending / all spending in the range |
+
+## `users` and `auth_sessions`
+
+| Table | Columns and meaning |
+| --- | --- |
+| `users` | `email` (unique, lower case), `password_hash` (scrypt, salted; null for an upgraded owner account until a password is set), `created_at` |
+| `auth_sessions` | `user_id`, `token_hash` (SHA-256 of the token; the token itself is never stored), `created_at`, `expires_at`, `revoked_at` |
+
+Every user-owned table (`accounts`, `import_batches`, `transactions`,
+`match_candidates`, `budgets`, `majra_people`, `majra_groups`,
+`majra_entries`, `commitments`, `audit_events`) has a required `user_id`.
+Uniqueness is per user: account names, budget categories, people's names,
+and the single "you" in Money Majra. Child rows (`import_rows`,
+`majra_shares`, `majra_group_members`) belong to their parent's user.
 
 ## `accounts`
 

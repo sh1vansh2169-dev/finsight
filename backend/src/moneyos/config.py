@@ -26,8 +26,8 @@ DEFAULT_DATABASE_URLS = {
 class Settings:
     data_mode: DataMode = DataMode.REAL
     database_url: str = DEFAULT_DATABASE_URLS[DataMode.REAL]
-    # When set, every /api/v1 request needs "Authorization: Bearer <token>".
-    api_token: str | None = None
+    # After the first account exists, more can sign up only if this is true.
+    allow_signup: bool = False
     rules_file: Path | None = None
     # Where trained models are saved and loaded (created by `moneyos ml`).
     models_dir: Path = Path("data/models")
@@ -41,7 +41,7 @@ class Settings:
         values = {
             "data_mode": mode,
             "database_url": env.get("MONEYOS_DATABASE_URL") or DEFAULT_DATABASE_URLS[mode],
-            "api_token": env.get("MONEYOS_API_TOKEN") or None,
+            "allow_signup": (env.get("MONEYOS_ALLOW_SIGNUP") or "").lower() in ("1", "true", "yes"),
             "rules_file": Path(rules) if rules else None,
             "models_dir": Path(models) if models else Path("data/models"),
         }

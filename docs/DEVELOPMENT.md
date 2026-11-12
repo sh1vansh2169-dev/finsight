@@ -72,10 +72,26 @@ schema:
 4. Run the tests. `test_migrations_match_the_models` fails if the models and
    migrations disagree.
 
+## Accounts
+
+Every API call needs a signed-in user. The first account can be created
+through the API (`POST /api/v1/auth/register`) or locally:
+
+```powershell
+.\.venv\Scripts\moneyos.exe user create you@example.com          # asks for the password twice
+.\.venv\Scripts\moneyos.exe user set-password you@example.com    # also ends existing sign-ins
+.\.venv\Scripts\moneyos.exe user list
+```
+
+Add `--sample` to work on the sample database, and `--password-stdin` to
+read the password from a pipe (a byte-order mark and CRLF are removed).
+In the interactive docs (`/docs`), sign in with `POST /api/v1/auth/login`,
+then use the **Authorize** button with the returned token.
+
 ## Configuration
 
 See [.env.example](../.env.example). Set variables in the shell, e.g.
-`$env:MONEYOS_API_TOKEN = "..."`. MoneyOS does not read `.env` files itself.
+`$env:MONEYOS_ALLOW_SIGNUP = "true"`. MoneyOS does not read `.env` files itself.
 
 ## Conventions
 

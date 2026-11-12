@@ -9,7 +9,10 @@ import json
 import sys
 from pathlib import Path
 
+from sqlalchemy import select
+
 from moneyos.config import DEFAULT_DATABASE_URLS, DataMode, Settings
+from moneyos.db.tenancy import system_session, user_session
 from moneyos.domain import report, synthetic
 from moneyos.domain.classify import RulesError, load_rules
 from moneyos.domain.importer import SchemaError
@@ -40,6 +43,13 @@ def _build_parser() -> argparse.ArgumentParser:
     rep.add_argument("--out", default="data/reports/latest", help="output folder (default: data/reports/latest)")
     rep.add_argument("--sample", action="store_true", help="report on the synthetic sample database")
     rep.add_argument("--currency", help="needed when the ledger has more than one currency")
+    rep.add_argument("--email", help="whose data to report on (default: the only account)")
+
+    user = commands.add_parser("user", help="manage accounts")
+    user.add_argument("action", choices=["create", "set-password", "list"])
+    user.add_argument("email", nargs="?")
+    user.add_argument("--sample", action="store_true", help="the synthetic sample database")
+    user.add_argument("--password-stdin", action="store_true", help="read the password from standard input")
 
     ml = commands.add_parser("ml", help="run a machine-learning experiment")
     ml.add_argument("experiment", choices=["categorization", "forecasting", "anomaly", "clustering"])
@@ -50,6 +60,8 @@ def _build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8000)
     serve.add_argument("--sample", action="store_true", help="serve the synthetic sample database")
+    serve.add_argument("--allow-network", action="store_true",
+                       help="listen on a non-local address (plain HTTP: put it behind TLS first)")
     return parser
 
 
@@ -102,8 +114,9 @@ def _cmd_seed_sample(args) -> int:
         return 2
     dataset = synthetic.generate(args.seed)
     try:
+        user_id, message = _sample_account(factory)
         rules = load_rules(Settings.from_env().rules_file)
-        with factory() as session:
+        with user_session(factory, user_id) as session:
             files = {**dataset.files, dataset.payapp.name: dataset.payapp.text}
             for name, text in files.items():
                 account = {
@@ -131,7 +144,35 @@ def _cmd_seed_sample(args) -> int:
     finally:
         factory.kw["bind"].dispose()
     print(f"\n{synthetic.SAMPLE_MARKER}\nStored in {args.database}. Serve it with: moneyos serve --sample")
+    print(message)
     return 0
+
+
+SAMPLE_EMAIL = "sample@moneyos.local"
+
+
+def _sample_account(factory) -> tuple[int, str]:
+    """The account that owns the sample data: the only one if there is one, else a new one."""
+    import secrets
+
+    from moneyos.db.tables import User
+    from moneyos.services import auth
+
+    with system_session(factory) as session:
+        users = list(session.scalars(select(User).order_by(User.id)))
+        if len(users) == 1:
+            user = users[0]
+            if user.password_hash is None:
+                return user.id, (f"Sign in as {user.email} after setting a password: "
+                                 f"moneyos user set-password {user.email} --sample")
+            return user.id, f"Sign in as {user.email}."
+        existing = next((u for u in users if u.email == SAMPLE_EMAIL), None)
+        if existing:
+            return existing.id, f"Sign in as {SAMPLE_EMAIL}."
+        password = secrets.token_urlsafe(12)
+        user = auth.create_user(session, SAMPLE_EMAIL, password)
+        return user.id, (f"Sign in as {SAMPLE_EMAIL} with password {password}\n"
+                         "(shown once; change it with: moneyos user set-password sample@moneyos.local --sample)")
 
 
 def _cmd_report(args) -> int:
@@ -146,11 +187,12 @@ def _cmd_report(args) -> int:
         print(f"error: {error}", file=sys.stderr)
         return 2
     try:
-        with factory() as session:
+        user_id = _pick_user(factory, args.email)
+        with user_session(factory, user_id) as session:
             path = write_report(
                 session, Path(args.out), currency=args.currency, sample=settings.data_mode == DataMode.SAMPLE
             )
-    except InvalidRequestError as error:
+    except (InvalidRequestError, LookupError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
     finally:
@@ -212,6 +254,69 @@ def _seed_sample_commitments(session) -> list[str]:
     return confirmed
 
 
+def _pick_user(factory, email: str | None) -> int:
+    from moneyos.db.tables import User
+
+    with system_session(factory) as session:
+        if email:
+            user = session.scalar(select(User).where(User.email == email.strip().lower()))
+            if user is None:
+                raise LookupError(f"no account for {email}")
+            return user.id
+        users = list(session.scalars(select(User)))
+        if len(users) != 1:
+            raise LookupError("there is more than one account (or none); choose one with --email")
+        return users[0].id
+
+
+def _read_password(from_stdin: bool) -> str:
+    if from_stdin:
+        # Windows shells may prefix piped text with a byte-order mark and end it with \r\n.
+        return sys.stdin.readline().lstrip("﻿").rstrip("\r\n")
+    import getpass
+
+    first = getpass.getpass("New password: ")
+    if getpass.getpass("Again: ") != first:
+        raise ValueError("the passwords do not match")
+    return first
+
+
+def _cmd_user(args) -> int:
+    from moneyos.db.session import DataModeError, init_db
+    from moneyos.db.tables import User
+    from moneyos.services import auth
+    from moneyos.services.errors import ConflictError, InvalidRequestError
+
+    settings = Settings.from_env(data_mode=DataMode.SAMPLE if args.sample else None)
+    try:
+        factory = init_db(settings.database_url, settings.data_mode)
+    except DataModeError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    try:
+        with system_session(factory) as session:
+            if args.action == "list":
+                for u in session.scalars(select(User).order_by(User.id)):
+                    print(f"{u.email}{'' if u.password_hash else '  (no password set)'}")
+                return 0
+            if not args.email:
+                print("error: an email is required", file=sys.stderr)
+                return 2
+            password = _read_password(args.password_stdin)
+            if args.action == "create":
+                auth.create_user(session, args.email, password)
+                print(f"Created {args.email.strip().lower()}")
+            else:
+                auth.set_password(session, args.email, password)
+                print(f"Password set for {args.email.strip().lower()}; existing sign-ins were ended")
+        return 0
+    except (InvalidRequestError, ConflictError, ValueError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    finally:
+        factory.kw["bind"].dispose()
+
+
 def _cmd_serve(args) -> int:
     import uvicorn
 
@@ -219,9 +324,10 @@ def _cmd_serve(args) -> int:
     from moneyos.db.session import DataModeError
 
     settings = Settings.from_env(data_mode=DataMode.SAMPLE if args.sample else None)
-    if not _is_loopback(args.host) and settings.api_token is None:
+    if not _is_loopback(args.host) and not args.allow_network:
         print(
-            "error: refusing to listen on a non-loopback address without MONEYOS_API_TOKEN set",
+            "error: refusing to listen on a non-local address. MoneyOS speaks plain HTTP, so passwords would "
+            "cross the network unencrypted. Put it behind a TLS proxy, then pass --allow-network.",
             file=sys.stderr,
         )
         return 2
@@ -253,6 +359,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_seed_sample(args)
     if args.command == "report":
         return _cmd_report(args)
+    if args.command == "user":
+        return _cmd_user(args)
     if args.command == "ml":
         from moneyos.ml import experiments
 
