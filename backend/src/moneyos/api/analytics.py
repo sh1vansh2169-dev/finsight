@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from moneyos.analytics.frame import to_money
 from moneyos.api.majra import MajraSummaryOut, summary_out
+from moneyos.api.planning import ESTIMATE_NOTE, _projection
 from moneyos.api.routes import SessionDep, SettingsDep
 from moneyos.api.schemas import RECORDED_TOTALS_NOTE, TransactionOut
 from moneyos.config import DataMode
@@ -106,6 +107,9 @@ class DashboardOut(BaseModel):
     money_majra: MajraSummaryOut | None = Field(
         description="Owed to you / owed by you. Expected, not guaranteed; never added to totals."
     )
+    outlook: dict[str, Any] | None = Field(
+        description="The next 30 days: confirmed commitments plus estimated everyday spending. An estimate."
+    )
     not_yet_available: dict[str, str]
 
 
@@ -157,6 +161,7 @@ def get_dashboard(session: SessionDep, settings: SettingsDep, month: MonthQuery 
         warnings=d.warnings,
         open_duplicate_reviews=d.open_duplicate_reviews,
         money_majra=summary_out(d.majra) if d.majra else None,
+        outlook={"note": ESTIMATE_NOTE, **_projection(d.outlook)} if d.outlook else None,
         not_yet_available=d.not_yet_available,
     )
 

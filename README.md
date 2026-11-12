@@ -5,13 +5,13 @@ bank and card statements, cleans and de-duplicates them, keeps a unified
 ledger with provenance for every value, and reports recorded totals. It is
 the foundation for later analytics, forecasting and ML work.
 
-> **Status: v0.6, early development.** Not production-ready and not
+> **Status: v0.7, early development.** Not production-ready and not
 > security-reviewed. Use synthetic data unless you understand
 > [SECURITY.md](docs/SECURITY.md).
 
 ## What works today
 
-All of this is covered by automated tests (765 passing at the last run, most of them property-based checks over random cases; see
+All of this is covered by automated tests (785 passing at the last run, most of them property-based checks over random cases; see
 [DEVELOPMENT.md](docs/DEVELOPMENT.md) to run them yourself).
 
 | Area | Implemented |
@@ -27,6 +27,9 @@ All of this is covered by automated tests (765 passing at the last run, most of 
 | Reports | `moneyos report`: Markdown report with charts, including what it cannot tell you |
 | Money Majra | People and groups; shared expenses (equal, exact, percentage or weighted splits, exact to the paisa); loans; partial repayments; balances that always sum to zero; a settlement plan with the fewest payments; protection against overpaying, repeated payments and double-linked bank payments; void with history; link to bank transactions |
 | Category suggestions (ML) | TF-IDF + Logistic Regression suggests categories for transactions the rules missed, with confidence and alternatives; bulk apply only above high confidence, marked as model-inferred. Trained on synthetic data so far |
+| Recurring payments and commitments | Detects rent, bills, subscriptions and salary (cadence, typical amount, next date, confidence, reasons); you confirm them as commitments or add your own; upcoming payments and how much to keep aside |
+| What-if simulator | Next 7–90 days from commitments plus estimated everyday spending, with a range; scenarios for a purchase, a new bill, a category cut, a delayed repayment or skipping a commitment; money owed to you never counted as yours; no balance unless you give one |
+| Recommendations | Rule-based, neutral, with their evidence: rising categories, budgets, subscriptions, money owed, the reserve for commitments, data to tidy |
 | Unusual payments | Payments unusually large for you, per category, with a plain reason and a dismiss action. Never called fraud |
 | ML experiments | `moneyos ml categorization / forecasting / anomaly / clustering`: reproducible, against baselines, logged in ML_EXPERIMENTS.md |
 | Ledger | Unified schema, integer minor units, transaction types (expense, income, transfer, refund, lent, borrowed, repayments, reversal, unknown), provenance of every classification |
@@ -38,8 +41,8 @@ All of this is covered by automated tests (765 passing at the last run, most of 
 ## Not built yet
 
 See the [roadmap](#roadmap). In particular: no web app or any screens
-(the dashboard exists as API data only), no forecasts in the app (no model
-beat simple baselines in the experiments), no payment-app integrations, no
+(the dashboard exists as API data only), no forecasting model in the app (none beat simple
+baselines; the what-if simulator uses the historical average), no payment-app integrations, no
 LLM assistant. **Every ML result so far is on synthetic data**; see
 [ML_EXPERIMENTS.md](docs/ML_EXPERIMENTS.md).
 
@@ -96,7 +99,7 @@ frontend/       (planned) React + TypeScript web app
 | 4 | Dashboard and descriptive analytics (Pandas) | **Done** (data and API; the screens themselves are Phase 8) |
 | 5 | Money Majra: lending, borrowing, shared expenses, repayments, settlements | **Done** (API; screens are Phase 8) |
 | 6 | ML and forecasting: categorisation, forecasting, anomaly detection, clustering, each against baselines | **Done on synthetic data** (experiments E1–E4). Shipped: category suggestions, unusual-payment flags. Not shipped: forecasting (no model beat the baselines), clustering. Next: research Models B–D |
-| 7 | Recurring payment detection, commitments, financial digital twin (what-if), rule-based recommendations | Not started |
+| 7 | Recurring payment detection, commitments, what-if simulator, rule-based recommendations | **Done** (API; screens are Phase 8). Research Models B–D are the next experiment |
 | 8 | Web app: React + TypeScript + Tailwind; user accounts, login (JWT), per-user data isolation | Not started |
 | 9 | More sources: Excel and supported PDF statements; authorised integrations research (Account Aggregator) | Not started; research first |
 | 10 | LLM assistant with tool calling, answers grounded in backend calculations | Not started |

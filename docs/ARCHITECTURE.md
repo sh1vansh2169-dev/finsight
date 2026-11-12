@@ -147,6 +147,38 @@ available money.
 expense you paid stays in your spending at the full amount; your
 "real" share is visible only in Money Majra.
 
+### Commitments and the what-if simulator
+**Recurring detection** (`analytics/recurring.py`) groups payments by a
+cleaned merchant name and accepts a series when at least 75% of the gaps
+fit one cadence (weekly, monthly, quarterly, yearly) within a tolerance;
+several payments on one day mean a habit, not a schedule. Amounts that move
+by more than 10% are marked as varying. Each detection has a 0–100
+confidence and plain reasons, and is only a suggestion.
+**Commitments** are what the user confirms (from a detection) or adds by
+hand, including one-off future payments. Confirmed facts (commitments) are
+kept apart from detected guesses (recurring suggestions).
+**The simulator** (`domain/simulator.py`, pure and deterministic) projects
+the next 7–90 days: commitments on their dates, everyday spending at the
+historical average (E2 found nothing better), and scenario changes
+(purchase, new recurring payment, category cut, delayed repayment, skipped
+commitment). The range uses the high end of varying bills and the 10th/90th
+percentiles of the user's own past spending over the same length of time.
+**Rules that keep it honest.**
+- *No double counting*: payments belonging to a confirmed commitment are
+  removed from the everyday-spending history (tested to the rupee).
+- *Owed money is not money you have*: what others owe appears only as "if
+  repaid"; what you owe only as "if you repay".
+- *No invented balance*: a balance is projected only from one the user
+  enters.
+- *Unknown is not zero*: everyday history uses only days a statement covers.
+- Assumptions are returned with every projection.
+**Recommendations** (`domain/recommend.py`) are a handful of transparent
+rules with their evidence: a category rising at least 30% and ₹500 above its
+recent average (two or more earlier months), budgets near or over, two or
+more small fixed subscriptions, money owed for 30+ days, the reserve for
+upcoming commitments, and data that needs attention. Wording is neutral; a
+test rejects judgemental words.
+
 ### Machine learning (`ml/`)
 **Principle.** A model is used only where it beats a simple baseline in an
 experiment that was actually run; every run is reproducible with
@@ -177,8 +209,8 @@ results that disappoint.
 - Unusual-payment flags (`/api/v1/ml/unusual`): personal robust z-score per
   category, with plain reasons, a minimum history, and a dismiss action.
   Never described as fraud.
-- Forecasts are evaluated but not yet served; they arrive with the
-  what-if simulator (Phase 7).
+- No forecasting model is served; the simulator uses the historical-average
+  baseline that E2 could not beat.
 
 ### Analytics: unknown is not zero
 **Problem.** A day with no transactions means "nothing spent" only if a

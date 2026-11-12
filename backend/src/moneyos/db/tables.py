@@ -310,6 +310,38 @@ class MajraShare(Base):
     share_minor: Mapped[int] = mapped_column(BigInteger)
 
 
+class Commitment(Base):
+    """A known future payment or income: confirmed from a detected pattern, or added by hand."""
+
+    __tablename__ = "commitments"
+    __table_args__ = (
+        CheckConstraint("amount_minor > 0", name="ck_commitment_positive"),
+        CheckConstraint("direction IN ('debit', 'credit')", name="ck_commitment_direction"),
+        CheckConstraint("cadence IN ('once', 'weekly', 'monthly', 'quarterly', 'yearly')", name="ck_commitment_cadence"),
+        CheckConstraint("status IN ('active', 'paused', 'ended')", name="ck_commitment_status"),
+        CheckConstraint("source IN ('detected', 'manual')", name="ck_commitment_source"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    direction: Mapped[str] = mapped_column(String(6))
+    amount_minor: Mapped[int] = mapped_column(BigInteger)  # typical amount
+    amount_varies: Mapped[bool] = mapped_column(Boolean, default=False)
+    high_minor: Mapped[int | None] = mapped_column(BigInteger)  # upper end when the amount varies
+    currency: Mapped[str] = mapped_column(String(3))
+    cadence: Mapped[str] = mapped_column(String(10))
+    next_due: Mapped[date] = mapped_column(Date)  # anchor date for the schedule
+    end_date: Mapped[date | None] = mapped_column(Date)
+    category: Mapped[str] = mapped_column(String(100))
+    source: Mapped[str] = mapped_column(String(10))
+    # Links the commitment to its payments in the ledger (detected ones), so
+    # the simulator can leave those payments out of everyday spending.
+    merchant_key: Mapped[str | None] = mapped_column(String(200))
+    status: Mapped[str] = mapped_column(String(10), default="active")
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now, onupdate=utc_now)
+
+
 class AuditEvent(Base):
     """Append-only record of imports, manual entries and corrections."""
 

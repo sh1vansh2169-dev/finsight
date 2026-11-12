@@ -85,6 +85,16 @@ its module becomes available.
   "Same payment: keep this one" and "Different payments". Show the pending
   count wherever totals appear (`open_duplicate_reviews` on `/summary`), and
   offer undo (`/reopen`).
+- Commitments: show detected recurring payments (`/api/v1/recurring`) as
+  "Looks like a monthly payment: confirm?" with their reasons. Upcoming
+  payments and the `reserve` belong on Home.
+- What-if (`POST /api/v1/simulate`): show the estimate with its cautious and
+  hopeful values as a band, never a single confident number; list the
+  `assumptions`; show "if others repay you" separately and never add it to
+  the estimate. Ask for the current balance; without it, talk about "change
+  over the next 30 days".
+- Recommendations: show `title` and `message` as written; `action` says which
+  screen helps. They are suggestions, not tasks.
 - Category suggestions (`/api/v1/ml/category-suggestions`): show as "Looks
   like Health?" with one-tap accept (PATCH the transaction) and the two
   alternatives. Never show model output as fact; values with basis `model`

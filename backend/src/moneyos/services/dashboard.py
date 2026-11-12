@@ -13,14 +13,12 @@ from moneyos.analytics.aggregate import cash_flow_series
 from moneyos.db.tables import TransactionRecord
 from moneyos.domain.budgets import BudgetUse
 from moneyos.domain.summary import LedgerSummary
-from moneyos.services import analytics, budgets, ledger, majra, review
+from moneyos.domain.simulator import Projection, project
+from moneyos.services import analytics, budgets, ledger, majra, planning, review
 
 # Dashboard sections that need modules not built yet. Listed so a client
 # can say "not available yet" instead of showing an empty or zero value.
-NOT_YET_AVAILABLE = {
-    "forecast": "Spending forecasts are planned for Phase 6.",
-    "upcoming_commitments": "Recurring bills and commitments are planned for Phase 7.",
-}
+NOT_YET_AVAILABLE: dict[str, str] = {}
 
 
 @dataclass
@@ -36,6 +34,8 @@ class Dashboard:
     open_duplicate_reviews: int
     # Your Money Majra position in this currency (None if you have none).
     majra: majra.MajraSummary | None = None
+    # The next 30 days from the newest transaction: an estimate, never a promise.
+    outlook: Projection | None = None
     not_yet_available: dict[str, str] = field(default_factory=lambda: dict(NOT_YET_AVAILABLE))
 
 
@@ -105,4 +105,5 @@ def build(
         warnings=warnings,
         open_duplicate_reviews=pending,
         majra=next((s for s in majra.summary(session) if s.currency == currency), None),
+        outlook=project(planning.inputs(session, currency)) if currency else None,
     )

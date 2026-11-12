@@ -40,7 +40,8 @@ def test_empty_ledger_dashboard(client):
     body = client.get("/api/v1/dashboard").json()
     assert body["currency"] is None and body["summary"] is None
     assert body["daily"] == [] and body["recent_transactions"] == []
-    assert set(body["not_yet_available"]) == {"forecast", "upcoming_commitments"}
+    assert body["not_yet_available"] == {}
+    assert body["outlook"] is None
     assert body["money_majra"] is None
 
 

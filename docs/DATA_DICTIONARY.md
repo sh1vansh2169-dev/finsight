@@ -78,10 +78,26 @@ currency, excluding failed payments and confirmed duplicates.
 Balance sign: positive = the person is owed money; negative = they owe.
 Group balances always sum to zero.
 
+## `commitments`
+
+| Column | Notes |
+| --- | --- |
+| `name`, `category` | |
+| `direction` | `debit` (a payment) or `credit` (income) |
+| `amount_minor` | Typical amount, positive |
+| `amount_varies`, `high_minor` | For bills that change: the largest recent amount |
+| `currency` | |
+| `cadence` | `once`, `weekly`, `monthly`, `quarterly`, `yearly` |
+| `next_due` | Anchor date of the schedule; monthly dates keep this day of the month (clamped to short months) |
+| `end_date` | Optional last date |
+| `source` | `detected` (confirmed from a recurring suggestion) or `manual` |
+| `merchant_key` | For detected ones: links to the ledger payments, which the simulator then leaves out of everyday spending |
+| `status` | `active`, `paused`, `ended` (only active ones are scheduled) |
+
 ## `alembic_version`
 
 Current schema revision, managed by Alembic. `0001` is the v0.2 schema,
-`0002` adds duplicate review, `0003` adds budgets, `0004` adds Money Majra.
+`0002` adds duplicate review, `0003` adds budgets, `0004` adds Money Majra, `0005` adds commitments.
 
 ## Analytics outputs (not stored)
 

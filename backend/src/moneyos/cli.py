@@ -125,6 +125,9 @@ def _cmd_seed_sample(args) -> int:
             print(f"Possible duplicates waiting for review: {review.count_open(session)}")
             if _seed_sample_majra(session):
                 print("Money Majra: sample trip with Sam and Ria, and a loan to a friend linked to a bank payment")
+            confirmed = _seed_sample_commitments(session)
+            if confirmed:
+                print(f"Commitments confirmed from detected recurring payments: {', '.join(confirmed)}")
     finally:
         factory.kw["bind"].dispose()
     print(f"\n{synthetic.SAMPLE_MARKER}\nStored in {args.database}. Serve it with: moneyos serve --sample")
@@ -192,6 +195,21 @@ def _seed_sample_majra(session) -> bool:
                    occurred_on=date(2026, 3, 9), description="Lent to a friend",
                    transaction_id=upi.id if upi else None)
     return True
+
+
+def _seed_sample_commitments(session) -> list[str]:
+    """Confirm the sample's obvious recurring payments, as a user would."""
+    from moneyos.services import commitments, planning
+
+    as_of = planning.default_as_of(session)
+    existing = {c.merchant_key for c in commitments.list_commitments(session)}
+    confirmed = []
+    for key in ("acme corp salary", "rent greenview apts", "city power electricity bill", "fibernet broadband",
+                "streamflix subscription"):
+        if key not in existing and any(s.key == key for s in commitments.detected(session, "INR", as_of)):
+            commitments.confirm_detected(session, key, "INR", as_of)
+            confirmed.append(key)
+    return confirmed
 
 
 def _cmd_serve(args) -> int:
