@@ -29,17 +29,21 @@ class Settings:
     # When set, every /api/v1 request needs "Authorization: Bearer <token>".
     api_token: str | None = None
     rules_file: Path | None = None
+    # Where trained models are saved and loaded (created by `moneyos ml`).
+    models_dir: Path = Path("data/models")
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None, **overrides) -> Settings:
         env = os.environ if env is None else env
         mode = DataMode(overrides.pop("data_mode", None) or env.get("MONEYOS_DATA_MODE") or "real")
         rules = env.get("MONEYOS_RULES_FILE")
+        models = env.get("MONEYOS_MODELS_DIR")
         values = {
             "data_mode": mode,
             "database_url": env.get("MONEYOS_DATABASE_URL") or DEFAULT_DATABASE_URLS[mode],
             "api_token": env.get("MONEYOS_API_TOKEN") or None,
             "rules_file": Path(rules) if rules else None,
+            "models_dir": Path(models) if models else Path("data/models"),
         }
         values.update({k: v for k, v in overrides.items() if v is not None})
         return cls(**values)

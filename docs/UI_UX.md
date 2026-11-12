@@ -85,3 +85,10 @@ its module becomes available.
   "Same payment: keep this one" and "Different payments". Show the pending
   count wherever totals appear (`open_duplicate_reviews` on `/summary`), and
   offer undo (`/reopen`).
+- Category suggestions (`/api/v1/ml/category-suggestions`): show as "Looks
+  like Health?" with one-tap accept (PATCH the transaction) and the two
+  alternatives. Never show model output as fact; values with basis `model`
+  need the same "inferred" styling as `rule`.
+- Unusual payments (`/api/v1/ml/unusual`): show the `reason` text as is,
+  with "This was expected" (dismiss). Do not use warning red or the word
+  "fraud"; this is information, not an alarm.

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "moneyos"
-version = "0.5.0"
+version = "0.6.0"
 description = "Personal finance ledger: transaction import, cleaning, deduplication and summaries."
 requires-python = ">=3.12"
 # Lower bounds are the versions this was tested with; upper bounds stop a
@@ -19,10 +19,14 @@ dependencies = [
     "pandas>=3.1,<4",
     "numpy>=2.5,<3",
     "matplotlib>=3.11,<4",
+    "scikit-learn>=1.9,<2",
+    "joblib>=1.6,<2",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=9.1,<10", "httpx2>=2.13,<3"]
+# Experiments only (`moneyos ml ...`); the app itself does not need them.
+ml = ["xgboost>=3.4,<4", "statsmodels>=0.15,<0.16"]
+dev = ["pytest>=9.1,<10", "httpx2>=2.13,<3", "moneyos[ml]"]
 
 [project.scripts]
 moneyos = "moneyos.cli:main"

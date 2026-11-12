@@ -58,3 +58,11 @@ data quality.
 - 2026-10-14: Question recorded. No experiments run.
 - 2026-11-11: Coverage indicators available from analytics (Phase 4). No
   forecasting experiments run yet.
+- 2026-11-12: **Baseline A done** (ML_EXPERIMENTS.md, E2): on 20 simulated
+  people, no transaction-only model beat simple baselines for 7- or 30-day
+  spending totals; one-off purchases dominate the error. The simulator
+  already records scheduled commitments separately (6–52% of spending,
+  median 29%), so Model B (adding recorded upcoming bills) can be tested on
+  the same data and protocol. Caution for B: the simulator's commitments are
+  perfectly regular by construction, which flatters any model that is told
+  about them; a fair test needs late, missing and changed bills too.

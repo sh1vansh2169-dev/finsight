@@ -30,6 +30,19 @@ The install is editable: source changes apply without reinstalling.
 .\.venv\Scripts\moneyos.exe report --sample                # Markdown report + charts in data\reports\latest
 ```
 
+Machine-learning experiments (need the `ml` extra, included in `dev`):
+
+```powershell
+.\.venv\Scripts\moneyos.exe ml categorization   # E1; saves the chosen model to data\models
+.\.venv\Scripts\moneyos.exe ml forecasting      # E2
+.\.venv\Scripts\moneyos.exe ml anomaly          # E3
+.\.venv\Scripts\moneyos.exe ml clustering       # E4
+```
+
+Each writes `results.json` and `report.md` under `data\experiments\<name>`.
+Results are deterministic for a given seed and library version; record any
+re-run in ML_EXPERIMENTS.md.
+
 The report is reproducible: the same database gives the same tables and
 charts (only the "Generated" date changes). Reports go under `data/`, which
 is git-ignored, because a report on real data contains real data.

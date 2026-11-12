@@ -41,6 +41,11 @@ def _build_parser() -> argparse.ArgumentParser:
     rep.add_argument("--sample", action="store_true", help="report on the synthetic sample database")
     rep.add_argument("--currency", help="needed when the ledger has more than one currency")
 
+    ml = commands.add_parser("ml", help="run a machine-learning experiment")
+    ml.add_argument("experiment", choices=["categorization", "forecasting", "anomaly", "clustering"])
+    ml.add_argument("--out", help="results folder (default: data/experiments/<experiment>)")
+    ml.add_argument("--save-model", default="data/models", help="where to save the selected model ('' to skip)")
+
     serve = commands.add_parser("serve", help="run the API server")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8000)
@@ -230,5 +235,25 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_seed_sample(args)
     if args.command == "report":
         return _cmd_report(args)
+    if args.command == "ml":
+        from moneyos.ml import experiments
+
+        out = Path(args.out or f"data/experiments/{args.experiment}")
+        if args.experiment == "categorization":
+            results = experiments.run_categorization(
+                out, save_model_to=Path(args.save_model) if args.save_model else None
+            )
+            print(f"Selected {results['selected']}; results in {out / 'report.md'}")
+        elif args.experiment == "clustering":
+            experiments.run_clustering(out)
+            print(f"Results in {out / 'report.md'}")
+        elif args.experiment == "anomaly":
+            results = experiments.run_anomaly(out)
+            print(f"Chosen {results['chosen']}; results in {out / 'report.md'}")
+        else:
+            results = experiments.run_forecasting(out)
+            chosen = {h: r["chosen_on_calibration"] for h, r in results["horizons"].items()}
+            print(f"Chosen per horizon: {chosen}; results in {out / 'report.md'}")
+        return 0
     return _cmd_serve(args)
 

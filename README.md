@@ -5,13 +5,13 @@ bank and card statements, cleans and de-duplicates them, keeps a unified
 ledger with provenance for every value, and reports recorded totals. It is
 the foundation for later analytics, forecasting and ML work.
 
-> **Status: v0.5, early development.** Not production-ready and not
+> **Status: v0.6, early development.** Not production-ready and not
 > security-reviewed. Use synthetic data unless you understand
 > [SECURITY.md](docs/SECURITY.md).
 
 ## What works today
 
-All of this is covered by automated tests (732 passing at the last run, most of them property-based checks over random cases; see
+All of this is covered by automated tests (765 passing at the last run, most of them property-based checks over random cases; see
 [DEVELOPMENT.md](docs/DEVELOPMENT.md) to run them yourself).
 
 | Area | Implemented |
@@ -26,6 +26,9 @@ All of this is covered by automated tests (732 passing at the last run, most of 
 | Dashboard data | One call for the Home screen: month summary, trends, recent transactions, budgets, warnings, and a list of sections not built yet |
 | Reports | `moneyos report`: Markdown report with charts, including what it cannot tell you |
 | Money Majra | People and groups; shared expenses (equal, exact, percentage or weighted splits, exact to the paisa); loans; partial repayments; balances that always sum to zero; a settlement plan with the fewest payments; protection against overpaying, repeated payments and double-linked bank payments; void with history; link to bank transactions |
+| Category suggestions (ML) | TF-IDF + Logistic Regression suggests categories for transactions the rules missed, with confidence and alternatives; bulk apply only above high confidence, marked as model-inferred. Trained on synthetic data so far |
+| Unusual payments | Payments unusually large for you, per category, with a plain reason and a dismiss action. Never called fraud |
+| ML experiments | `moneyos ml categorization / forecasting / anomaly / clustering`: reproducible, against baselines, logged in ML_EXPERIMENTS.md |
 | Ledger | Unified schema, integer minor units, transaction types (expense, income, transfer, refund, lent, borrowed, repayments, reversal, unknown), provenance of every classification |
 | Manual entry & corrections | Cash/manual transactions; user corrections of type and category with an audit trail |
 | Summaries | Recorded inflow/outflow/net, income, spending after refunds (refunds reduce spending in their category), unclassified money, transfers, by month and category, data-quality warnings |
@@ -35,10 +38,10 @@ All of this is covered by automated tests (732 passing at the last run, most of 
 ## Not built yet
 
 See the [roadmap](#roadmap). In particular: no web app or any screens
-(the dashboard exists as API data only), no ML models, no
-forecasts, no
-payment-app integrations, no LLM assistant. **No ML model has been trained
-yet.**
+(the dashboard exists as API data only), no forecasts in the app (no model
+beat simple baselines in the experiments), no payment-app integrations, no
+LLM assistant. **Every ML result so far is on synthetic data**; see
+[ML_EXPERIMENTS.md](docs/ML_EXPERIMENTS.md).
 
 ## Quick start (Windows PowerShell, from the repo root)
 
@@ -92,7 +95,7 @@ frontend/       (planned) React + TypeScript web app
 | 3 | Normalisation, deduplication, ledger | **Done**: exact dedupe, near-duplicate review queue, audit trail. Open: transfer pairing between your own accounts, reversal pairing |
 | 4 | Dashboard and descriptive analytics (Pandas) | **Done** (data and API; the screens themselves are Phase 8) |
 | 5 | Money Majra: lending, borrowing, shared expenses, repayments, settlements | **Done** (API; screens are Phase 8) |
-| 6 | ML and forecasting: categorisation (rules vs TF-IDF + Logistic Regression, Random Forest, XGBoost); forecasting (baselines vs exponential smoothing, SARIMA, Random Forest, XGBoost); anomaly detection (z-score vs Isolation Forest, LOF); spending clustering as research | Not started |
+| 6 | ML and forecasting: categorisation, forecasting, anomaly detection, clustering, each against baselines | **Done on synthetic data** (experiments E1–E4). Shipped: category suggestions, unusual-payment flags. Not shipped: forecasting (no model beat the baselines), clustering. Next: research Models B–D |
 | 7 | Recurring payment detection, commitments, financial digital twin (what-if), rule-based recommendations | Not started |
 | 8 | Web app: React + TypeScript + Tailwind; user accounts, login (JWT), per-user data isolation | Not started |
 | 9 | More sources: Excel and supported PDF statements; authorised integrations research (Account Aggregator) | Not started; research first |

@@ -53,7 +53,7 @@ def _load_sample(client, dataset):
 
 def test_health(client, make_client, tmp_path):
     assert client.get("/health").json() == {
-        "status": "ok", "version": "0.5.0", "data_mode": "real", "sample_data": False,
+        "status": "ok", "version": "0.6.0", "data_mode": "real", "sample_data": False,
     }
     sample = make_client(
         data_mode=DataMode.SAMPLE, database_url=f"sqlite:///{(tmp_path / 's.db').as_posix()}"

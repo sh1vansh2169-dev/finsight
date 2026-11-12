@@ -25,6 +25,7 @@ API and later the forecasting code.
 | `domain` | Parse, validate, classify, de-duplicate, match, summarise | `importer.py`, `cleaning.py`, `classify.py`, `dedupe.py`, `matching.py`, `summary.py`, `models.py`, `money.py` |
 | `db` | Schema, migrations, engine, data-mode guard | `tables.py`, `session.py`, `migrations/` |
 | `analytics` | Descriptive analytics in Pandas: coverage, time series, statistics, data quality, charts | `frame.py`, `coverage.py`, `aggregate.py`, `stats.py`, `quality.py`, `charts.py` |
+| `ml` | Experiments and models: categorisation, forecasting, anomaly detection, clustering; synthetic data generators | `categorizer.py`, `forecasting.py`, `anomaly.py`, `clustering.py`, `experiments.py`, `corpus.py`, `spending_sim.py` |
 | `services` | Workflows that combine domain logic with storage | `imports.py`, `ledger.py`, `review.py`, `analytics.py`, `budgets.py`, `dashboard.py`, `majra.py`, `report.py`, `mapping.py` |
 | `api` | Validation (Pydantic), auth, HTTP status mapping | `app.py`, `routes.py`, `schemas.py`, `deps.py` |
 
@@ -146,6 +147,39 @@ available money.
 expense you paid stays in your spending at the full amount; your
 "real" share is visible only in Money Majra.
 
+### Machine learning (`ml/`)
+**Principle.** A model is used only where it beats a simple baseline in an
+experiment that was actually run; every run is reproducible with
+`moneyos ml <experiment>` and logged in ML_EXPERIMENTS.md, including the
+results that disappoint.
+**Discipline applied in every experiment.**
+- *Synthetic data, labelled as such.* There are no real labelled
+  transactions yet. Generators (`ml/corpus.py`, `ml/spending_sim.py`,
+  `ml/anomaly.py`) encode stated assumptions; results show whether a method
+  captures those patterns, not real-world accuracy.
+- *No leakage.* Text features are fitted inside each training fold
+  (scikit-learn `Pipeline`); the categoriser is also evaluated on merchants
+  never seen in training (grouped K-fold). Forecasts and anomaly scores use
+  only data up to their own date; forecasting sets are chronological with
+  purging so no target window crosses a boundary. Tests check each of these.
+- *Pre-registered choices.* Hyperparameters, thresholds and the rule for
+  picking a winner are written down before the full run, and not changed
+  after seeing results.
+- *Uncertainty.* Spread across folds and seeds, bootstrap intervals, and
+  forecast intervals whose coverage is checked on held-out data.
+**What runs in the app.**
+- Category *suggestions* for transactions the rules left uncategorised
+  (`/api/v1/ml/category-suggestions`), with confidence and alternatives.
+  Applying them in bulk requires high confidence and records basis `model`,
+  so they stay visibly inferred; the source file, the user and the rules
+  always take precedence. Models are versioned files with a JSON model
+  card (training data fingerprint, labels, settings, scores).
+- Unusual-payment flags (`/api/v1/ml/unusual`): personal robust z-score per
+  category, with plain reasons, a minimum history, and a dismiss action.
+  Never described as fraud.
+- Forecasts are evaluated but not yet served; they arrive with the
+  what-if simulator (Phase 7).
+
 ### Analytics: unknown is not zero
 **Problem.** A day with no transactions means "nothing spent" only if a
 statement for that day was imported. Otherwise it means "we don't know".
@@ -262,6 +296,10 @@ matcher's list of ignored payment-rail words), and a test was added for it.
   share separately never adds up.
 - **Dynamic programming over subsets**: an exact answer to an NP-hard
   problem when the input is small, and knowing when to fall back.
+- **Evaluating honestly**: grouped vs random splits (does the model work on
+  a merchant it has never seen?), chronological splits with purging,
+  choosing on validation and reporting on test, bootstrap intervals, and
+  why a strong simple baseline is the most important number in a table.
 - **Property-based testing**: checking invariants (shares add up, balances
   sum to zero, plans settle everyone) on hundreds of random cases, and
   checking an optimiser against brute force.
