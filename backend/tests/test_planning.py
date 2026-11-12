@@ -175,3 +175,18 @@ def test_subscription_and_owed_rules():
     assert "848.00" in subs.message
     for r in recs:
         assert not any(word in r.message.lower() for word in BANNED)
+
+
+def test_summary_and_recommendations_agree_on_counts(client, dataset):
+    """The same fact must show the same number everywhere (failed payments excluded in both)."""
+    import re
+
+    app = dataset.payapp  # contains failed payments with an unknown type
+    preview = client.post("/api/v1/imports/preview", files={"file": (app.name, app.text.encode(), "text/csv")},
+                          data={"account": synthetic.PAYAPP_ACCOUNT})
+    client.post(f"/api/v1/imports/{preview.json()['batch']['id']}/commit")
+
+    warnings = " ".join(client.get("/api/v1/summary").json()["currencies"]["INR"]["warnings"])
+    in_summary = int(re.search(r"(\d+) transaction\(s\) have an unknown type", warnings).group(1))
+    classify = next(r for r in client.get("/api/v1/recommendations").json() if r["kind"] == "classify")
+    assert classify["evidence"]["count"] == in_summary

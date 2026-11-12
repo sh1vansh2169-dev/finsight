@@ -160,9 +160,11 @@ def recommendations(session: Session, currency: str, *, as_of: date | None = Non
     uses: list[BudgetUse] = [
         u for u in budgets.utilisation(session, as_of.year, as_of.month, as_of) if u.currency == currency
     ]
+    # Counted exactly as the summary counts it (failed payments excluded), so
+    # the two never show different numbers for the same thing.
     unknown = session.scalar(select(func.count()).select_from(TransactionRecord).where(
         TransactionRecord.currency == currency, TransactionRecord.txn_type == TxnType.UNKNOWN.value,
-        TransactionRecord.duplicate_of_id.is_(None)))
+        TransactionRecord.status != Status.FAILED.value, TransactionRecord.duplicate_of_id.is_(None)))
     projection = sim.project(inputs(session, currency, as_of=as_of))
     return recommend(
         currency=currency, today=as_of, trends=_trends(session, currency, as_of), budgets=uses,

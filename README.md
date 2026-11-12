@@ -11,7 +11,7 @@ the foundation for later analytics, forecasting and ML work.
 
 ## What works today
 
-All of this is covered by automated tests (800 passing at the last run, most of them property-based checks over random cases; see
+All of this is covered by automated tests (802 passing at the last run, most of them property-based checks over random cases; see
 [DEVELOPMENT.md](docs/DEVELOPMENT.md) to run them yourself).
 
 | Area | Implemented |

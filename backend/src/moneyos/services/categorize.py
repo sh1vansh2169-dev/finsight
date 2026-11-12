@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from moneyos.db.tables import AuditEvent, TransactionRecord
-from moneyos.domain.models import ALLOWED_DIRECTIONS, UNCATEGORIZED, Basis, Direction, TxnType
+from moneyos.domain.models import ALLOWED_DIRECTIONS, UNCATEGORIZED, Basis, Direction, Status, TxnType
 from moneyos.services.errors import InvalidRequestError
 
 DEFAULT_THRESHOLD = 0.6  # the pre-registered threshold used in the experiment
@@ -40,6 +40,11 @@ def _candidates(session: Session, limit: int) -> list[TransactionRecord]:
                 TransactionRecord.category_basis == Basis.NONE.value,
                 TransactionRecord.category == UNCATEGORIZED,
                 TransactionRecord.duplicate_of_id.is_(None),
+                # Categories describe spending: only money out that is an
+                # expense or not yet known. Never transfers, income, loans.
+                TransactionRecord.direction == Direction.DEBIT.value,
+                TransactionRecord.txn_type.in_((TxnType.EXPENSE.value, TxnType.UNKNOWN.value)),
+                TransactionRecord.status != Status.FAILED.value,
             )
             .options(selectinload(TransactionRecord.account))
             .order_by(TransactionRecord.occurred_on.desc(), TransactionRecord.id.desc())

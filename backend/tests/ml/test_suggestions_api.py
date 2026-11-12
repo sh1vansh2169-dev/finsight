@@ -97,3 +97,18 @@ def test_a_deliberate_uncategorized_is_left_alone(client):
     client.patch(f"/api/v1/transactions/{t['id']}", json={"category": "Uncategorized"})
     assert client.get("/api/v1/ml/category-suggestions").json()["suggestions"] == []
     assert client.post("/api/v1/ml/category-suggestions/apply", json={"min_confidence": 0.6}).json()["applied"] == 0
+
+
+def test_only_spending_gets_category_suggestions(client):
+    """Transfers between your own accounts, income and failed payments are never categorised by the model."""
+    transfer = client.post("/api/v1/transactions", json={
+        "date": "2026-03-05", "description": "transfer to credit card 4321", "amount": "5000",
+        "direction": "debit", "txn_type": "transfer"}).json()["transaction"]
+    income = _manual(client, "NEFT CR 88231 ANON", direction="credit")
+    spending = _manual(client, "Paid to Zenith Medicos")
+    suggested = {s["transaction"]["id"] for s in client.get("/api/v1/ml/category-suggestions").json()["suggestions"]}
+    assert suggested == {spending["id"]}
+    assert transfer["id"] not in suggested and income["id"] not in suggested
+    client.post("/api/v1/ml/category-suggestions/apply", json={"min_confidence": 0.6})
+    after = client.get(f"/api/v1/transactions/{transfer['id']}").json()
+    assert (after["category"], after["txn_type"]) == ("Uncategorized", "transfer")
