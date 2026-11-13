@@ -173,7 +173,7 @@ export interface MajraGroupDetail {
   balances_sum_to_zero: boolean;
   settlement: { payer: MajraPerson; receiver: MajraPerson; amount: Money }[];
   settlement_is_minimal: boolean;
-  entries: { id: number; kind: string; description: string; date: string; amount: Money; voided: boolean }[];
+  entries: MajraEntry[];
 }
 
 export interface UnusualPayment {
@@ -187,3 +187,20 @@ export interface UnusualList {
   note: string;
   payments: UnusualPayment[];
 }
+
+export interface MajraEntry {
+  id: number;
+  kind: "expense" | "loan" | "payment";
+  description: string;
+  date: string;
+  amount: Money;
+  paid_by_id: number;
+  paid_to_id: number | null;
+  split_method: string | null;
+  shares: { person_id: number; amount: Money }[];
+  transaction_id: number | null;
+  voided: boolean;
+  void_reason: string | null;
+}
+
+export type SplitMethod = "equal" | "exact" | "percent" | "shares";

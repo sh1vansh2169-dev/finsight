@@ -187,7 +187,10 @@ no CORS, and the session cookie never leaves the site.
 - **Money stays a string.** Amounts are passed to `Intl.NumberFormat` as
   decimal strings, so nothing is rounded through a float on the way to the
   screen. The one exception is the chart, which needs numbers to draw bar
-  heights; it never does arithmetic that is shown as a figure.
+  heights; it never does arithmetic that is shown as a figure. Where the
+  app must add amounts itself (checking that a split adds up before
+  saving), it converts the typed text to whole paise as a `BigInt`
+  (`toMinor` in `src/lib/format.ts`), so 0.10 + 0.20 is exactly 0.30.
 - **Unknown is drawn as a gap.** Days no statement covers are `null` and
   appear as missing bars with a note, never as zero spending.
 - **Cookie sessions with a CSRF header** (see SECURITY.md): the token is

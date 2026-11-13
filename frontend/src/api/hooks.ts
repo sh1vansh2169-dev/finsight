@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError, api, query } from "./client";
 import type {
-  Account, Dashboard, Health, ImportBatch, ImportDetail, MajraGroup, MajraGroupDetail, MajraSummary, Recommendation,
+  Account, Dashboard, Health, ImportBatch, ImportDetail, MajraGroup, MajraGroupDetail, MajraPerson, MajraSummary,
+  Recommendation, SplitMethod,
   Transaction, TransactionPage, UnusualList, User,
 } from "./types";
 
@@ -139,6 +140,77 @@ export function useMajraGroups() {
 
 export function useMajraGroup(id: number) {
   return useQuery({ queryKey: ["majra-group", id], queryFn: () => api<MajraGroupDetail>(`/majra/groups/${id}`) });
+}
+
+export function useMajraPeople() {
+  return useQuery({ queryKey: ["majra-people"], queryFn: () => api<MajraPerson[]>("/majra/people") });
+}
+
+/** Every Money Majra change returns the group's new state; keep it and refresh what depends on it. */
+function useMajraChange<V>(fn: (vars: V) => Promise<MajraGroupDetail>) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: (detail) => {
+      client.setQueryData(["majra-group", detail.group.id], detail);
+      return Promise.all(
+        ["majra-groups", "majra-summary", "dashboard", "recommendations"].map((key) =>
+          client.invalidateQueries({ queryKey: [key] })),
+      );
+    },
+  });
+}
+
+export function useAddPerson() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) => api<MajraPerson>("/majra/people", { body: { name } }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["majra-people"] }),
+  });
+}
+
+export function useCreateGroup() {
+  return useMajraChange((body: { name: string; member_ids: number[]; currency?: string }) =>
+    api<MajraGroupDetail>("/majra/groups", { body }));
+}
+
+export interface ExpenseInput {
+  groupId: number;
+  description: string;
+  date: string;
+  amount: string;
+  paid_by_id: number;
+  split: { method: SplitMethod; participants: { person_id: number; value?: string }[] };
+}
+
+export function useAddExpense() {
+  return useMajraChange(({ groupId, ...body }: ExpenseInput) =>
+    api<MajraGroupDetail>(`/majra/groups/${groupId}/expenses`, { body }));
+}
+
+export interface PaymentInput {
+  groupId: number;
+  payer_id: number;
+  receiver_id: number;
+  amount: string;
+  date: string;
+  description: string;
+  confirm_duplicate?: boolean;
+}
+
+export function useAddPayment() {
+  return useMajraChange(({ groupId, ...body }: PaymentInput) =>
+    api<MajraGroupDetail>(`/majra/groups/${groupId}/payments`, { body }));
+}
+
+export function useAddLoan() {
+  return useMajraChange((body: { person_id: number; direction: "lent" | "borrowed"; amount: string; date: string; description: string }) =>
+    api<MajraGroupDetail>("/majra/loans", { body }));
+}
+
+export function useVoidEntry() {
+  return useMajraChange(({ id, reason }: { id: number; reason: string }) =>
+    api<MajraGroupDetail>(`/majra/entries/${id}/void`, { body: { reason } }));
 }
 
 export function useUnusual() {

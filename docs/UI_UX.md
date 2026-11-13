@@ -83,7 +83,9 @@ its module becomes available.
   *suggestion* with the fewest payments. Show the `note` that money owed to
   you is expected, not guaranteed. A 409 on a payment means "this looks
   like a repeat": offer "Yes, it's a second payment" (`confirm_duplicate`).
-  Voided entries stay visible, struck through.
+  Voided entries stay visible, struck through. (Built in the web app:
+  `src/pages/MajraForms.tsx`; split totals are checked in whole paise
+  before saving, and the server checks them again.)
 - Budget `message` text is already neutral and plain-language; `state` is
   `on_track` / `close` / `over`. Pair state colours with an icon and label.
 - Duplicate review (`/api/v1/review/duplicates`) returns each pair with a

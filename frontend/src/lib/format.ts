@@ -75,3 +75,24 @@ export function categoryLabel(t: { category: string; txn_type: string }): string
   const typed = ["transfer", "income", "refund", "lent", "borrowed", "repayment_received", "repayment_made", "reversal"];
   return t.category === "Uncategorized" && typed.includes(t.txn_type) ? typeLabel(t.txn_type) : t.category;
 }
+
+/** "1,234.5" or "1234.50" -> 123450n paise; null if it is not a valid amount with at most 2 decimals. */
+export function toMinor(text: string): bigint | null {
+  const clean = text.replace(/[,\s]/g, "");
+  const match = /^(\d{1,13})(?:\.(\d{1,2}))?$/.exec(clean);
+  if (!match) return null;
+  return BigInt(match[1]!) * 100n + BigInt((match[2] ?? "").padEnd(2, "0"));
+}
+
+/** 123450n -> "1234.50" (exact; for sending to the API and for formatting). */
+export function fromMinor(minor: bigint): string {
+  const sign = minor < 0n ? "-" : "";
+  const abs = minor < 0n ? -minor : minor;
+  return `${sign}${abs / 100n}.${String(abs % 100n).padStart(2, "0")}`;
+}
+
+/** Today's date in the user's time zone, as YYYY-MM-DD. */
+export function todayIso(now = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
