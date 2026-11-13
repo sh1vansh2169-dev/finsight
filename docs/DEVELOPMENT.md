@@ -131,6 +131,19 @@ with a `.txt` note. With more than one account, set `MONEYOS_WATCH_USER`
 to the email whose ledger the inbox fills. The same can be set with
 `MONEYOS_WATCH_DIR`.
 
+## SMS alerts (Android)
+
+1. On the phone, install *SMS Backup & Restore* and back up messages to a
+   file (choosing only your banks' conversations keeps it small and private).
+2. Copy the `.xml` file into the statement inbox (or upload it in
+   Transactions → Import statement). Up to 50 MB.
+3. Review the alerts it found, then add them.
+
+The backup holds all your messages. FinSight keeps only money alerts, but
+the file itself stays wherever you put it (`done\` after the inbox reads
+it): delete it once imported if you do not want a copy of your messages
+on the computer.
+
 ## The assistant (optional)
 
 1. Install Ollama from https://ollama.com and start it.

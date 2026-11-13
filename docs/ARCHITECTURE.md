@@ -390,6 +390,21 @@ synthetic statement as CSV, Excel and PDF and requires identical results.
   50 MB unpacked for an .xlsx (a "zip bomb" check before parsing), and
   `defusedxml` for the workbook's XML.
 
+### SMS alerts (`domain/sms.py`)
+
+An Android SMS backup is detected by its content (`<smses>`), parsed with
+`defusedxml`, and every received message is tested as a possible
+transaction alert. Messages that are not alerts are dropped at once, so
+neither OTPs nor personal messages reach the database. Rules, not a model:
+the first debit or credit word sets the direction; the first Rs/INR/₹
+amount not next to "balance" or "limit" is the amount (or "debited by
+250.0"); the date is the message's timestamp; a UPI/UTR reference lets the
+same payment in a statement be matched exactly. The result is ordinary
+rows for `import_records`, so it goes through the same validation, duplicate
+checks and preview as any statement. Known limits: banks change their
+wording; an unrecognised alert is shown as unreadable or, with no money
+words at all, not picked up.
+
 ### Statement inbox (`services/inbox.py`)
 
 A background thread scans the inbox folder every 5 seconds. A file is read

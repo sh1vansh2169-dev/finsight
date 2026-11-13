@@ -49,7 +49,7 @@ export function ImportPanel({ onClose, initial }: { onClose: () => void; initial
         <form onSubmit={onPreview} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-sm font-medium">
             Statement file from your bank, card or payment app
-            <input type="file" accept=".csv,.xlsx,.pdf,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            <input type="file" accept=".csv,.xlsx,.pdf,.xml,text/csv,application/pdf,text/xml,application/xml,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               className="text-sm font-normal" />
           </label>
           <div className="flex flex-wrap gap-3">
@@ -70,7 +70,7 @@ export function ImportPanel({ onClose, initial }: { onClose: () => void; initial
           {previewing.error && <ErrorNote error={previewing.error} />}
           <div><Button type="submit" disabled={!file || previewing.isPending}>{previewing.isPending ? "Reading…" : "Preview"}</Button></div>
           <p className="text-xs text-muted">
-            CSV, Excel (.xlsx) or PDF. PDFs must contain text with a transaction table; scanned or password-protected
+            CSV, Excel (.xlsx), PDF, or an Android SMS backup (.xml) for bank alerts. PDFs must contain text with a transaction table; scanned or password-protected
             PDFs can't be read. Nothing is saved until you choose to add it.
           </p>
           <InboxHint />

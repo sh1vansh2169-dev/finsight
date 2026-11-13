@@ -27,11 +27,10 @@ from moneyos.api.schemas import (
 )
 from moneyos.config import DataMode, Settings
 from moneyos.domain.classify import Rules
-from moneyos.domain.importer import MAX_IMPORT_BYTES
+from moneyos.domain.sms import MAX_SMS_BYTES
 from moneyos.domain.models import TxnType
 from moneyos.domain.report import summary_dict
 from moneyos.services import imports, ledger, review
-from moneyos.services.errors import PayloadTooLargeError
 
 router = APIRouter()
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -71,9 +70,7 @@ async def preview_import(
     day_first: Annotated[bool, Form()] = True,
 ) -> ImportDetailOut:
     """Parse a CSV, Excel or PDF statement and stage it. Nothing is added to the ledger until commit."""
-    content = await file.read(MAX_IMPORT_BYTES + 1)
-    if len(content) > MAX_IMPORT_BYTES:
-        raise PayloadTooLargeError(f"file is larger than {MAX_IMPORT_BYTES // (1024 * 1024)} MB")
+    content = await file.read(MAX_SMS_BYTES + 1)  # the service applies the limit for the file's kind
     batch = imports.preview_import(
         session,
         filename=file.filename or "upload.csv",

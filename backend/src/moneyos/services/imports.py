@@ -19,6 +19,7 @@ from moneyos.db.tables import Account, AuditEvent, ImportBatch, ImportRow, Trans
 from moneyos.domain.classify import Rules, classify
 from moneyos.domain.dedupe import deduplicate
 from moneyos.domain.importer import MAX_IMPORT_BYTES
+from moneyos.domain.sms import MAX_SMS_BYTES, looks_like_sms_backup
 from moneyos.domain.statements import import_bytes
 from moneyos.domain.models import Transaction
 from moneyos.services import review
@@ -89,8 +90,9 @@ def preview_import(
     rules: Rules,
 ) -> ImportBatch:
     """Parse and stage a file. Raises SchemaError if the columns are unusable."""
-    if len(content) > MAX_IMPORT_BYTES:
-        raise PayloadTooLargeError(f"file is larger than {MAX_IMPORT_BYTES // (1024 * 1024)} MB")
+    limit = MAX_SMS_BYTES if looks_like_sms_backup(content) else MAX_IMPORT_BYTES  # SMS backups are bigger
+    if len(content) > limit:
+        raise PayloadTooLargeError(f"file is larger than {limit // (1024 * 1024)} MB")
     # Keep only the base name of whatever the client sent.
     filename = PurePath(filename.replace("\\", "/")).name[:255] or "upload.csv"
 

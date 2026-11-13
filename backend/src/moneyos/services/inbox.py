@@ -27,7 +27,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from moneyos.db.tables import User
 from moneyos.db.tenancy import system_session, user_session
 from moneyos.domain.classify import Rules
-from moneyos.domain.importer import MAX_IMPORT_BYTES, SchemaError
+from moneyos.domain.importer import SchemaError
 from moneyos.services import imports
 from moneyos.services.errors import PayloadTooLargeError
 
@@ -115,8 +115,6 @@ class Inbox:
             account = path.parent.name if path.parent != self.folder else None
             try:
                 content = path.read_bytes()
-                if len(content) > MAX_IMPORT_BYTES:
-                    raise PayloadTooLargeError(f"file is larger than {MAX_IMPORT_BYTES // (1024 * 1024)} MB")
                 with user_session(self.factory, user_id) as session:
                     batch = imports.preview_import(
                         session, filename=path.name, content=content,

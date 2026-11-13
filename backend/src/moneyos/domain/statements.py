@@ -37,7 +37,7 @@ from moneyos.domain.importer import (
     map_columns,
 )
 
-Format = Literal["csv", "xlsx", "pdf"]
+Format = Literal["csv", "xlsx", "pdf", "sms"]
 
 # Limits on what one upload may make the server do (the 5 MB size cap applies first).
 MAX_ROWS = 20_000
@@ -56,6 +56,10 @@ def detect_format(content: bytes) -> Format:
         return "xlsx"
     if content.startswith(_OLE_MAGIC):
         raise SchemaError("this is an old Excel (.xls) file; save it as .xlsx or CSV and import that")
+    from moneyos.domain.sms import looks_like_sms_backup
+
+    if looks_like_sms_backup(content):
+        return "sms"
     return "csv"
 
 
@@ -72,6 +76,13 @@ def import_bytes(
     options = {"account": account, "default_currency": default_currency, "day_first": day_first}
     if kind == "csv":
         return import_text(io.StringIO(decode_bytes(content), newline=""), source_file, **options)
+    if kind == "sms":
+        from moneyos.domain.sms import read_backup
+
+        header, alerts, _ = read_backup(content)
+        if account:  # an inbox subfolder names the account; it overrides the sender-based name
+            alerts = ((n, {**row, "Account": ""}) for n, row in alerts)
+        return import_records(header, alerts, source_file, **options)
     header, rows = read_xlsx(content) if kind == "xlsx" else read_pdf(content)
     return import_records(header, rows, source_file, **options)
 

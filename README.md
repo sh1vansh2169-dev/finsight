@@ -16,13 +16,14 @@ the foundation for later analytics, forecasting and ML work.
 
 ## What works today
 
-All of this is covered by automated tests (874 backend tests, many of them property-based checks over random cases, and 43 web-app tests, all passing at the last run; see
+All of this is covered by automated tests (894 backend tests, many of them property-based checks over random cases, and 43 web-app tests, all passing at the last run; see
 [DEVELOPMENT.md](docs/DEVELOPMENT.md) to run them yourself).
 
 | Area | Implemented |
 | --- | --- |
 | Statement import | CSV, Excel (.xlsx) and text PDF statements (file type read from the content, not the name; header found below title lines; PDF tables with or without ruling lines, wrapped descriptions joined; scanned and password-protected PDFs refused with a reason). Column mapping for common layouts (signed amount, debit/credit columns, amount + DR/CR), date/amount/currency/status normalisation, per-row validation with reasons |
 | Import workflow | Preview → commit or discard, import history, file-hash warning on re-import |
+| SMS alerts | Bank and UPI alert messages from an Android SMS backup (the XML file from *SMS Backup & Restore*), through the inbox or an upload. Only money alerts are kept; OTPs, chats, payment requests, reminders, dues and balance messages are dropped and never stored. Amount, direction, account, UPI reference and payee are read with rules for common Indian bank formats; unreadable alerts are shown, not guessed; failed payments are kept as failed and never counted |
 | Statement inbox | `moneyos serve --watch FOLDER`: statements saved into a folder (for example straight from your bank or UPI app's download) are picked up by themselves and wait in Transactions for your review. A subfolder's name becomes the account. Nothing logs in anywhere and nothing is added without your OK |
 | Duplicates | Exact match by bank reference; occurrence-aware matching otherwise; re-checked at commit time |
 | Duplicate review | Explainable near-duplicate detection across sources (e.g. payment-app export vs bank statement) with a review queue: confirm, reject, undo, all audited. Nothing is merged automatically |

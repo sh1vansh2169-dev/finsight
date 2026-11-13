@@ -22,6 +22,7 @@ store real financial data in it on a shared machine.**
 | Local-only by default | `moneyos serve` binds to `127.0.0.1` and refuses other addresses unless `--allow-network` is given (see TLS below) |
 | Input validation | Pydantic models with length, pattern and precision limits; unknown fields rejected; CSV values validated per row |
 | Upload limits | 5 MB per file; only the base name of the uploaded file name is kept. Excel and PDF: at most 20,000 rows and 100 pages, 50 MB unpacked for an .xlsx, XML parsed with `defusedxml`. The file type is read from the content, never from the name |
+| SMS backups | Parsed with `defusedxml`; up to 50 MB. Only transaction alerts are kept (sender, timestamp and the alert text, for traceability); OTPs and all other messages are discarded while reading and never stored |
 | Statement passwords | Password-protected PDFs are refused; FinSight never asks for or stores a statement password |
 | Safe database access | SQLAlchemy ORM and bound parameters only; no SQL built from user input |
 | No secrets in code | Configuration via environment variables; `.env` files are git-ignored; `.env.example` holds no values |

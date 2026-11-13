@@ -17,6 +17,9 @@ phone-sync tool's download folder at it and statements appear in
 FinSight for review by themselves. Your UPI payments are also in your bank
 statement, whichever app made them.
 
+On Android, bank and UPI alert SMS can be imported from an SMS backup
+file, with no access to the phone or any account (see ARCHITECTURE.md).
+
 ## India's Account Aggregator (AA) framework
 
 The authorised way to share financial data between institutions in India.

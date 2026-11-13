@@ -175,3 +175,16 @@ def test_the_inbox_is_off_unless_configured(database_url):
 @pytest.fixture
 def rules():
     return load_rules()
+
+
+def test_an_sms_backup_in_the_inbox_is_staged(setup, rules):
+    from domain.test_sms import backup
+
+    factory, folder, add_user = setup
+    uid = add_user("you@example.com")
+    inbox = Inbox(folder, factory, rules)
+    folder.mkdir()
+    (folder / "sms-20260315.xml").write_bytes(backup())
+    inbox.scan()
+    assert [n for n, _ in inbox.scan().staged] == ["sms-20260315.xml"]
+    assert batches(factory, uid) == [("sms-20260315.xml", "previewed", 6)]  # the failed one is kept, marked failed
