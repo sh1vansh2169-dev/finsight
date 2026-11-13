@@ -115,8 +115,10 @@ def _filter(
     txn_type: TxnType | None = None,
     category: str | None = None,
     include_duplicates: bool = False,
+    q: Annotated[str | None, Query(max_length=100)] = None,
 ) -> ledger.TransactionFilter:
-    return ledger.TransactionFilter(start, end, account, currency, txn_type, category, include_duplicates)
+    return ledger.TransactionFilter(start, end, account, currency, txn_type, category, include_duplicates,
+                                    q.strip() if q and q.strip() else None)
 
 
 FilterDep = Annotated[ledger.TransactionFilter, Depends(_filter)]
@@ -231,6 +233,12 @@ def resolve_duplicate_candidate(
 def reopen_duplicate_candidate(candidate_id: int, session: SessionDep) -> DuplicateCandidateOut:
     """Undo a decision."""
     return DuplicateCandidateOut.from_candidate(review.reopen(session, candidate_id))
+
+
+@router.get("/categories", tags=["transactions"])
+def categories(session: SessionDep, rules: RulesDep) -> list[str]:
+    """Every category in use or known to the rules, for pickers and filters."""
+    return ledger.categories(session, rules)
 
 
 @router.get("/accounts", response_model=list[AccountOut], tags=["accounts"])

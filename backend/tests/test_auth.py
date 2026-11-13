@@ -255,3 +255,30 @@ def test_cli_password_from_a_windows_pipe(tmp_path, monkeypatch, capsys):
         assert ok.status_code == 200
     finally:
         client.app.state.session_factory.kw["bind"].dispose()
+
+
+def test_cookie_sessions_for_the_web_app(make_client):
+    client = make_client()
+    body = client.post("/api/v1/auth/register",
+                       json={"email": "asha@example.com", "password": TEST_PASSWORD, "use_cookie": True})
+    assert body.status_code == 201
+    assert body.json()["token"] is None  # never handed to page scripts
+    cookie = body.headers["set-cookie"].lower()
+    assert "httponly" in cookie and "samesite=strict" in cookie and "path=/api" in cookie
+
+    assert client.get("/api/v1/auth/me").json()["email"] == "asha@example.com"  # reads need no extra header
+    write = {"date": "2026-03-01", "description": "Tea", "amount": "20", "direction": "debit"}
+    forged = client.post("/api/v1/transactions", json=write)
+    assert forged.status_code == 401 and "X-MoneyOS-CSRF" in forged.json()["detail"]
+    ok = client.post("/api/v1/transactions", json=write, headers={"X-MoneyOS-CSRF": "1"})
+    assert ok.status_code == 201
+
+    assert client.post("/api/v1/auth/logout", headers={"X-MoneyOS-CSRF": "1"}).status_code == 204
+    assert client.get("/api/v1/auth/me").status_code == 401
+
+
+def test_signup_status(make_client):
+    closed = make_client(allow_signup=False)
+    assert closed.get("/api/v1/auth/status").json() == {"signup_open": True}  # nobody yet
+    sign_up(closed, "owner@example.com")
+    assert closed.get("/api/v1/auth/status").json() == {"signup_open": False}

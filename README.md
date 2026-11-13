@@ -11,7 +11,7 @@ the foundation for later analytics, forecasting and ML work.
 
 ## What works today
 
-All of this is covered by automated tests (802 passing at the last run, most of them property-based checks over random cases; see
+All of this is covered by automated tests (809 backend tests, many of them property-based checks over random cases, and 19 web-app tests, all passing at the last run; see
 [DEVELOPMENT.md](docs/DEVELOPMENT.md) to run them yourself).
 
 | Area | Implemented |
@@ -38,11 +38,13 @@ All of this is covered by automated tests (802 passing at the last run, most of 
 | API | FastAPI backend with OpenAPI docs at `/docs` |
 | Accounts and privacy | Sign-up, sign-in and sign-out; passwords hashed with scrypt; revocable sessions stored only as hashes; lockout after repeated failures; every user sees only their own data, enforced in the database layer; delete your account and all your data |
 | Data separation | Sample and real data live in separate, stamped databases that refuse to be mixed |
+| Web app (first screens) | React + TypeScript + Tailwind, served by the backend: sign-in; Home (month figures, daily chart with uncovered days as gaps, 30-day outlook, budgets, Money Majra, recent transactions); Transactions (search, filters, category and type corrections, two-step statement import); Money Majra and Insights (read-only); Profile (theme, sign out, delete account). Light and dark themes; phone and desktop layouts |
 
 ## Not built yet
 
-See the [roadmap](#roadmap). In particular: no web app or any screens
-(the dashboard exists as API data only), no forecasting model in the app (none beat simple
+See the [roadmap](#roadmap). In particular: the web app cannot yet add Money Majra entries,
+review duplicates, manage budgets or commitments, or run the what-if simulator (all of these work
+through the API at `/docs`), no forecasting model in the app (none beat simple
 baselines; the what-if simulator uses the historical average), no payment-app integrations, no
 LLM assistant. **Every ML result so far is on synthetic data**; see
 [ML_EXPERIMENTS.md](docs/ML_EXPERIMENTS.md).
@@ -56,6 +58,15 @@ python -m venv .venv
 .\.venv\Scripts\moneyos.exe seed-sample               # load synthetic data into data/sample/
 .\.venv\Scripts\moneyos.exe serve --sample            # http://127.0.0.1:8000/docs
 # sign in with the account printed by seed-sample (see docs/DEVELOPMENT.md, Accounts)
+```
+
+The web app (needs Node.js 22.22 or later), in a second terminal:
+
+```powershell
+cd frontend
+npm install
+npm test                # run the web-app tests
+npm run build           # then open http://127.0.0.1:8000
 ```
 
 Other commands:
@@ -77,7 +88,7 @@ backend/        Python package (FastAPI, SQLAlchemy) and its tests
   tests/
 data/synthetic/ generated sample statements (the only data that is committed)
 docs/           architecture, data dictionary, security, research and ML notes
-frontend/       (planned) React + TypeScript web app
+frontend/       React + TypeScript + Tailwind web app (src/pages, src/components, src/api, src/test)
 ```
 
 ## Documentation
@@ -102,7 +113,7 @@ frontend/       (planned) React + TypeScript web app
 | 5 | Money Majra: lending, borrowing, shared expenses, repayments, settlements | **Done** (API; screens are Phase 8) |
 | 6 | ML and forecasting: categorisation, forecasting, anomaly detection, clustering, each against baselines | **Done on synthetic data** (experiments E1–E4). Shipped: category suggestions, unusual-payment flags. Not shipped: forecasting (no model beat the baselines), clustering. Next: research Models B–D |
 | 7 | Recurring payment detection, commitments, what-if simulator, rule-based recommendations | **Done** (API; screens are Phase 8). Research Models B–D are the next experiment |
-| 8 | Web app: React + TypeScript + Tailwind; user accounts, login, per-user data isolation | **In progress**: accounts and isolation done (8a); the web app itself is next (8b) |
+| 8 | Web app: React + TypeScript + Tailwind; user accounts, login, per-user data isolation | **In progress**: accounts and isolation done (8a); web app first screens done (8b, step 1); forms for Money Majra, duplicate review, budgets, commitments and the simulator next |
 | 9 | More sources: Excel and supported PDF statements; authorised integrations research (Account Aggregator) | Not started; research first |
 | 10 | LLM assistant with tool calling, answers grounded in backend calculations | Not started |
 | 11 | PostgreSQL + Docker deployment, security review, release | Not started |

@@ -31,6 +31,8 @@ class Settings:
     rules_file: Path | None = None
     # Where trained models are saved and loaded (created by `moneyos ml`).
     models_dir: Path = Path("data/models")
+    # The built web app, served at "/" when present (`npm run build` in frontend/).
+    frontend_dist: Path = Path("frontend/dist")
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None, **overrides) -> Settings:
@@ -44,6 +46,7 @@ class Settings:
             "allow_signup": (env.get("MONEYOS_ALLOW_SIGNUP") or "").lower() in ("1", "true", "yes"),
             "rules_file": Path(rules) if rules else None,
             "models_dir": Path(models) if models else Path("data/models"),
+            "frontend_dist": Path(env.get("MONEYOS_FRONTEND_DIST") or "frontend/dist"),
         }
         values.update({k: v for k, v in overrides.items() if v is not None})
         return cls(**values)

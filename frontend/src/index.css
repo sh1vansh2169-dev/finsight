@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+/* Dark mode follows data-theme on <html> (set from the user's choice or the system). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Semantic tokens. Every text/background pair used here was checked for
+   WCAG AA contrast (>= 4.5:1) in both themes. */
+:root {
+  --page: #faf7f0;
+  --surface: #ffffff;
+  --surface-2: #f3efe5;
+  --border: #e6e0d2; /* decorative edges only */
+  --field: #8a8474; /* form-control edges: >= 3:1 on every background */
+  --ink: #1e241d;
+  --ink-2: #4e564c;
+  --muted: #626a5f;
+  --primary: #4a6d40;
+  --on-primary: #ffffff;
+  --primary-ink: #3b5a33;
+  --primary-soft: #e4ecdd;
+  --accent: #255fa8; /* money in */
+  --out: #a34a24; /* money out: calm, never alarm red */
+  --warn-ink: #7a4f00;
+  --warn-bg: #fcf1d8;
+  --danger-ink: #a8261b;
+  --chart-in: #2a78d6;
+  --chart-out: #eb6834;
+  --chart-grid: #e1e0d9;
+  --unknown: #f0efec;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --page: #121512;
+  --surface: #1a1e19;
+  --surface-2: #232822;
+  --border: #2e352c;
+  --field: #6f786b;
+  --ink: #eceee8;
+  --ink-2: #bcc3b7;
+  --muted: #a0a89b;
+  --primary: #93b787;
+  --on-primary: #10140f;
+  --primary-ink: #a9c99c;
+  --primary-soft: #26301f;
+  --accent: #82b2ee;
+  --out: #f0a07c;
+  --warn-ink: #f1c46b;
+  --warn-bg: #2c2414;
+  --danger-ink: #f4958c;
+  --chart-in: #3987e5;
+  --chart-out: #d95926;
+  --chart-grid: #2c2c2a;
+  --unknown: #2a2e28;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--border);
+  --color-field: var(--field);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-ink: var(--primary-ink);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-out: var(--out);
+  --color-warn-ink: var(--warn-ink);
+  --color-warn-bg: var(--warn-bg);
+  --color-danger-ink: var(--danger-ink);
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius-card: 1.25rem;
+}
+
+html,
+body {
+  background: var(--page);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

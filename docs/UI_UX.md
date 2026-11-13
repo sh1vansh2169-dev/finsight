@@ -61,8 +61,10 @@ its module becomes available.
 
 ## Backend notes for the UI (collected as phases land)
 
-- Sign-in: `POST /api/v1/auth/register` and `/auth/login` return a token
-  for `Authorization: Bearer ...`. Treat 401 as "please sign in again" and
+- Sign-in: `POST /api/v1/auth/register` and `/auth/login` with
+  `use_cookie: true` set an `httpOnly` session cookie (the web app does
+  this); send `X-MoneyOS-CSRF: 1` on every change. Without `use_cookie`
+  they return a token for `Authorization: Bearer ...`. Treat 401 as "please sign in again" and
   429 as "too many attempts, wait". Error text is already user-facing.
   Account deletion needs the password and an explicit confirmation step.
 - Money arrives as decimal strings ("-120.00"); never convert to a JavaScript `Number` for

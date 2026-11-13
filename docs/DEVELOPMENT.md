@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Python | 3.14.8 (3.12+ supported by `pyproject.toml`) | Backend |
 | Git | 2.56 | Version control |
-| Node.js | 24 | React web app, Phase 8 |
+| Node.js | 22.22 or later (developed on 24) | React web app |
 
 ## Setup (Windows PowerShell, from the repo root)
 
@@ -88,10 +88,33 @@ read the password from a pipe (a byte-order mark and CRLF are removed).
 In the interactive docs (`/docs`), sign in with `POST /api/v1/auth/login`,
 then use the **Authorize** button with the returned token.
 
+## Web app
+
+```powershell
+cd frontend
+npm install          # once, and after package.json changes
+npm test             # Vitest + Testing Library, against a fake API (no server needed)
+npm run typecheck    # TypeScript only
+npm run build        # typecheck, then build into frontend\dist
+npm run dev          # Vite dev server on http://localhost:5173 with hot reload
+```
+
+`moneyos serve` serves the built app from `frontend/dist` at http://127.0.0.1:8000,
+so after `npm run build` the whole app runs from one address. For development,
+run `moneyos serve --sample` and `npm run dev` side by side: Vite forwards `/api`
+and `/health` to port 8000. If `frontend/dist` does not exist the server still
+runs; only the API is available.
+
+The page tests replace `fetch` with a fake API (`src/test/helpers.tsx`) built
+from synthetic fixtures (`src/test/fixtures.ts`), and drive the real router.
+jsdom does not see files attached with `user.upload` when checking a
+`required` file input, so the import test submits the form directly.
+
 ## Configuration
 
 See [.env.example](../.env.example). Set variables in the shell, e.g.
 `$env:MONEYOS_ALLOW_SIGNUP = "true"`. MoneyOS does not read `.env` files itself.
+`MONEYOS_FRONTEND_DIST` points the server at a different web-app build.
 
 ## Conventions
 

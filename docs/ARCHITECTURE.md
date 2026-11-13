@@ -27,7 +27,8 @@ API and later the forecasting code.
 | `analytics` | Descriptive analytics in Pandas: coverage, time series, statistics, data quality, charts | `frame.py`, `coverage.py`, `aggregate.py`, `stats.py`, `quality.py`, `charts.py` |
 | `ml` | Experiments and models: categorisation, forecasting, anomaly detection, clustering; synthetic data generators | `categorizer.py`, `forecasting.py`, `anomaly.py`, `clustering.py`, `experiments.py`, `corpus.py`, `spending_sim.py` |
 | `services` | Workflows that combine domain logic with storage | `imports.py`, `ledger.py`, `review.py`, `analytics.py`, `budgets.py`, `dashboard.py`, `majra.py`, `report.py`, `mapping.py` |
-| `api` | Validation (Pydantic), auth, HTTP status mapping | `app.py`, `routes.py`, `schemas.py`, `deps.py` |
+| `api` | Validation (Pydantic), auth, HTTP status mapping, serving the web app | `app.py`, `routes.py`, `schemas.py`, `deps.py`, `auth.py`, `webapp.py` |
+| `frontend` | React web app: screens, API hooks, display formatting | `src/App.tsx`, `src/pages/`, `src/components/`, `src/api/`, `src/lib/format.ts` |
 
 ## Key decisions
 
@@ -170,6 +171,36 @@ no signing keys to manage) rather than JWTs; passwords use scrypt. See
 SECURITY.md.
 **Existing data** is kept: the migration to v0.8 creates an `owner@localhost`
 account without a password and assigns every existing row to it.
+
+### The web app
+
+React 19 + TypeScript (strict) + Tailwind 4, built with Vite and served by
+the backend from `frontend/dist`, so the app and the API share one origin:
+no CORS, and the session cookie never leaves the site.
+
+- **Server state lives in TanStack Query.** Each API call is a hook in
+  `src/api/hooks.ts`; after any change to the ledger, everything derived
+  from it (transactions, dashboard, recommendations...) is refetched.
+  Signing in or out clears the whole cache, so one person's data is never
+  shown to the next. A 401 anywhere sets the user to signed-out, which
+  sends the app to the sign-in page.
+- **Money stays a string.** Amounts are passed to `Intl.NumberFormat` as
+  decimal strings, so nothing is rounded through a float on the way to the
+  screen. The one exception is the chart, which needs numbers to draw bar
+  heights; it never does arithmetic that is shown as a figure.
+- **Unknown is drawn as a gap.** Days no statement covers are `null` and
+  appear as missing bars with a note, never as zero spending.
+- **Cookie sessions with a CSRF header** (see SECURITY.md): the token is
+  in an `httpOnly` cookie the page cannot read, and changes need the
+  `X-MoneyOS-CSRF` header, which `src/api/client.ts` adds.
+- **Serving.** `api/webapp.py` registers a catch-all route last: files
+  inside the build folder are served as they are; any other path gets
+  `index.html` so the router can handle it. `/api`, `/docs` and `/health`
+  are never shadowed. Every response carries the CSP and other headers.
+- **Design tokens** (colours for light and dark, radius) are CSS variables
+  in `src/index.css`, exposed to Tailwind with `@theme inline`. Text
+  colours were checked for at least 4.5:1 contrast and form borders for
+  3:1 in both themes.
 
 ### Commitments and the what-if simulator
 **Recurring detection** (`analytics/recurring.py`) groups payments by a
@@ -321,6 +352,8 @@ no meaningful cost.
 | Review | Proposals, decisions, undo, supersession, audit, totals before and after review | `test_review.py`, `test_matching.py` |
 | Schema | Migrations equal the models; v0.2 databases upgrade with data intact; downgrade/upgrade | `test_migrations.py` |
 | Analytics | Pandas series agree with the plain-Python summary; unknown periods stay NaN/null; statistics match Python's `statistics` module; charts render | `tests/analytics/`, `test_analytics_api.py` |
+| Web serving and sessions | SPA fallback, API not shadowed, path traversal refused, cookie sessions and the CSRF header, search escaping | `test_webapp.py`, `test_auth.py` |
+| Web app | Formatting, the API client (CSRF header, errors), and pages driven through the real router against a fake API: sign-in and redirects, Home, search, corrections, import preview/commit | `frontend/src/test/` |
 
 Warnings are errors in the test run (`filterwarnings = error`), which caught
 two dependency deprecations and two leaked database connections during

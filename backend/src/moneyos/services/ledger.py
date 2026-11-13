@@ -38,11 +38,17 @@ class TransactionFilter:
     category: str | None = None
     # Records the user confirmed as duplicates are hidden unless asked for.
     include_duplicates: bool = False
+    # Case-insensitive text search in the description.
+    q: str | None = None
 
 
 def _filtered(query: Select, f: TransactionFilter) -> Select:
     if not f.include_duplicates:
         query = query.where(TransactionRecord.duplicate_of_id.is_(None))
+    if f.q:
+        # Bound parameter, with LIKE wildcards in the user's text escaped.
+        pattern = "%" + f.q.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+        query = query.where(func.lower(TransactionRecord.description).like(pattern, escape="\\"))
     if f.start:
         query = query.where(TransactionRecord.occurred_on >= f.start)
     if f.end:
@@ -214,6 +220,11 @@ def summarize_ledger(session: Session, f: TransactionFilter) -> dict[str, Ledger
         )
     )
     return summarize_by_currency(to_domain(r) for r in records)
+
+
+def categories(session: Session, rules: Rules) -> list[str]:
+    used = set(session.scalars(select(TransactionRecord.category).distinct()))
+    return sorted((used | set(rules.categories)) - {UNCATEGORIZED}) + [UNCATEGORIZED]
 
 
 def list_accounts(session: Session) -> list[Account]:

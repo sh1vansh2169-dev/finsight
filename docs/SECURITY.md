@@ -13,6 +13,10 @@ store real financial data in it on a shared machine.**
 | Sign-in failures | The same message for an unknown email and a wrong password. After 5 failures in 15 minutes the email is locked for that window (in memory; resets on restart) |
 | Sign-up | The first account can always be created; later ones only with `MONEYOS_ALLOW_SIGNUP=true` |
 | Per-user isolation | Enforced in the database layer, not in each feature: every ORM query on user-owned data is automatically restricted to the session's user, new rows are stamped with that user, writing another user's row raises an error, and a session that names no user cannot read user data at all (`db/tenancy.py`). Another user's record is reported as "not found", never "forbidden" |
+| Web-app sessions | The web app signs in with `use_cookie: true`: the session token goes into an `httpOnly`, `SameSite=Strict` cookie limited to `/api` (and `Secure` over HTTPS), so page scripts can never read it and the response body carries no token. API clients keep using `Authorization: Bearer` |
+| Cross-site requests | When a request is authenticated by the cookie, every method other than GET/HEAD/OPTIONS must also send `X-MoneyOS-CSRF: 1`. Another site cannot add that header to a cross-site request without a CORS preflight, which the server never approves (no CORS is configured). This backs up `SameSite=Strict` |
+| Web-app headers | Pages are served with a Content-Security-Policy allowing only the app's own scripts, styles, images and API (`default-src 'self'`, no inline scripts, `frame-ancestors 'none'`), plus `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and `X-Frame-Options: DENY`. Static files are served only from inside the build folder (path traversal is tested) |
+| Open redirects | After sign-in the app follows `?next=` only to a path on the same site |
 | Account deletion | `POST /api/v1/auth/delete-account` with the password and `confirm: true` permanently deletes the account and every record it owns |
 | Local-only by default | `moneyos serve` binds to `127.0.0.1` and refuses other addresses unless `--allow-network` is given (see TLS below) |
 | Input validation | Pydantic models with length, pattern and precision limits; unknown fields rejected; CSV values validated per row |
@@ -48,8 +52,10 @@ Only someone with access to your machine can do this.
   access to your user account. Use full-disk encryption (BitLocker).
 - **Lockouts are per process and in memory.** Restarting the server clears
   them, and several server processes would not share them.
-- **Tokens in the browser.** The web app (Phase 8) will need to store the
-  session token; this needs care against cross-site scripting.
+- **Styles allow `'unsafe-inline'`** in the CSP (the chart library sets inline
+  styles). Scripts do not.
+- **The web app has no automatic sign-out on inactivity**; sessions last 7
+  days unless you sign out.
 - **No email verification or password reset by email.** Passwords are reset
   with the `moneyos user set-password` command on the machine.
 - **Previews linger.** Previewed but never committed or discarded batches
