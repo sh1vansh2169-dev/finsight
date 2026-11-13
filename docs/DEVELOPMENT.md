@@ -110,6 +110,16 @@ from synthetic fixtures (`src/test/fixtures.ts`), and drive the real router.
 jsdom does not see files attached with `user.upload` when checking a
 `required` file input, so the import test submits the form directly.
 
+## The assistant (optional)
+
+1. Install Ollama from https://ollama.com and start it.
+2. Pull a model that supports tool calling: `ollama pull qwen2.5:7b`
+   (the default; set `MONEYOS_ASSISTANT_MODEL` to use another).
+3. Start MoneyOS and open Insights → Ask.
+
+Tests never need a model: they use a scripted stand-in and a stand-in
+Ollama HTTP server (`tests/test_assistant.py`).
+
 ## Configuration
 
 See [.env.example](../.env.example). Set variables in the shell, e.g.

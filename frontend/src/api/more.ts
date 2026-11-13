@@ -140,3 +140,30 @@ export function useSimulation(input: SimulationInput) {
     placeholderData: (previous) => previous,
   });
 }
+
+// ---------------------------------------------------------------- assistant
+
+export interface AssistantStatus {
+  available: boolean;
+  model: string;
+  message: string;
+}
+
+export interface AssistantAnswer {
+  answer: string;
+  unverified_figures: string[];
+  tool_calls: { name: string; arguments: unknown; result: unknown }[];
+  stopped_early: boolean;
+  model: string;
+}
+
+export function useAssistantStatus() {
+  return useQuery({ queryKey: ["assistant-status"], queryFn: () => api<AssistantStatus>("/assistant/status"), staleTime: 30_000 });
+}
+
+export function useAsk() {
+  return useMutation({
+    mutationFn: (body: { question: string; history: { role: "user" | "assistant"; content: string }[] }) =>
+      api<AssistantAnswer>("/assistant/ask", { body }),
+  });
+}

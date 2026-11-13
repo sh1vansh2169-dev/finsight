@@ -11,7 +11,7 @@ the foundation for later analytics, forecasting and ML work.
 
 ## What works today
 
-All of this is covered by automated tests (810 backend tests, many of them property-based checks over random cases, and 37 web-app tests, all passing at the last run; see
+All of this is covered by automated tests (865 backend tests, many of them property-based checks over random cases, and 41 web-app tests, all passing at the last run; see
 [DEVELOPMENT.md](docs/DEVELOPMENT.md) to run them yourself).
 
 | Area | Implemented |
@@ -38,13 +38,14 @@ All of this is covered by automated tests (810 backend tests, many of them prope
 | API | FastAPI backend with OpenAPI docs at `/docs` |
 | Accounts and privacy | Sign-up, sign-in and sign-out; passwords hashed with scrypt; revocable sessions stored only as hashes; lockout after repeated failures; every user sees only their own data, enforced in the database layer; delete your account and all your data |
 | Data separation | Sample and real data live in separate, stamped databases that refuse to be mixed |
+| Assistant | Ask questions in plain words (Insights → Ask). A local model (Ollama) answers using read-only MoneyOS tools, so figures come from MoneyOS, not the model; every money figure in an answer is checked against those tools and any it cannot find is marked unverified; the tool results are shown. Data stays on your computer by default. Tested against a stand-in model only so far |
 | Web app | React + TypeScript + Tailwind, served by the backend: sign-in; Home (month figures, daily chart with uncovered days as gaps, 30-day outlook, budgets, Money Majra, recent transactions); Transactions (search, filters, category and type corrections, two-step statement import, possible-duplicate markers, duplicate review with undo, suggested categories to accept); Money Majra (add people and groups, shared expenses split equally or by exact amounts, percentages or shares, loans, repayments with a repeat-payment check, cancel an entry with a reason); Insights (suggestions, unusual payments you can mark as expected, spending by category, budgets, bills and income: upcoming payments, commitments, detected regular payments to confirm, and the what-if simulator); Profile (theme, sign out, delete account). Light and dark themes; phone and desktop layouts |
 
 ## Not built yet
 
 See the [roadmap](#roadmap). In particular: no automatic bank connection (see [INTEGRATIONS.md](docs/INTEGRATIONS.md)), no scanned-PDF reading, no forecasting model in the app (none beat simple
-baselines; the what-if simulator uses the historical average), no payment-app integrations, no
-LLM assistant. **Every ML result so far is on synthetic data**; see
+baselines; the what-if simulator uses the historical average), no payment-app integrations. The
+assistant has not yet been run with a real language model. **Every ML result so far is on synthetic data**; see
 [ML_EXPERIMENTS.md](docs/ML_EXPERIMENTS.md).
 
 ## Quick start (Windows PowerShell, from the repo root)
@@ -114,7 +115,7 @@ frontend/       React + TypeScript + Tailwind web app (src/pages, src/components
 | 7 | Recurring payment detection, commitments, what-if simulator, rule-based recommendations | **Done**, with screens (Phase 8). The simulator forecasts as research Model B does |
 | 8 | Web app: React + TypeScript + Tailwind; user accounts, login, per-user data isolation | **Done**: accounts and isolation (8a); the web app with every module's screens (8b) |
 | 9 | More sources: Excel and supported PDF statements; authorised integrations research (Account Aggregator) | **Done**: Excel and text-PDF import; research concluded that Account Aggregator access needs a regulated entity, so file import stays ([INTEGRATIONS.md](docs/INTEGRATIONS.md)) |
-| 10 | LLM assistant with tool calling, answers grounded in backend calculations | Not started |
+| 10 | LLM assistant with tool calling, answers grounded in backend calculations | **Done** (local model via Ollama; read-only tools; figures checked against tool results). Tested against a stand-in Ollama server; not yet with a real model |
 | 11 | PostgreSQL + Docker deployment, security review, release | Not started |
 
 The FinSight specification was merged into this plan on 2026-11-11; see

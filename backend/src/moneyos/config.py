@@ -33,6 +33,11 @@ class Settings:
     models_dir: Path = Path("data/models")
     # The built web app, served at "/" when present (`npm run build` in frontend/).
     frontend_dist: Path = Path("frontend/dist")
+    # The assistant's local language model, served by Ollama (https://ollama.com).
+    ollama_url: str = "http://127.0.0.1:11434"
+    assistant_model: str = "qwen2.5:7b"
+    # Money data is sent to the model. Only a model on this machine is allowed unless this is true.
+    assistant_allow_remote: bool = False
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None, **overrides) -> Settings:
@@ -47,6 +52,9 @@ class Settings:
             "rules_file": Path(rules) if rules else None,
             "models_dir": Path(models) if models else Path("data/models"),
             "frontend_dist": Path(env.get("MONEYOS_FRONTEND_DIST") or "frontend/dist"),
+            "ollama_url": env.get("MONEYOS_OLLAMA_URL") or "http://127.0.0.1:11434",
+            "assistant_model": env.get("MONEYOS_ASSISTANT_MODEL") or "qwen2.5:7b",
+            "assistant_allow_remote": (env.get("MONEYOS_ASSISTANT_ALLOW_REMOTE") or "").lower() in ("1", "true", "yes"),
         }
         values.update({k: v for k, v in overrides.items() if v is not None})
         return cls(**values)

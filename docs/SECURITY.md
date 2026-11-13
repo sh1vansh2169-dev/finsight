@@ -17,6 +17,7 @@ store real financial data in it on a shared machine.**
 | Cross-site requests | When a request is authenticated by the cookie, every method other than GET/HEAD/OPTIONS must also send `X-MoneyOS-CSRF: 1`. Another site cannot add that header to a cross-site request without a CORS preflight, which the server never approves (no CORS is configured). This backs up `SameSite=Strict` |
 | Web-app headers | Pages are served with a Content-Security-Policy allowing only the app's own scripts, styles, images and API (`default-src 'self'`, no inline scripts, `frame-ancestors 'none'`), plus `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and `X-Frame-Options: DENY`. Static files are served only from inside the build folder (path traversal is tested) |
 | Open redirects | After sign-in the app follows `?next=` only to a path on the same site |
+| Assistant | Read-only tools only (nothing can be written, paid or sent); runs in the user's own session; talks only to a model on this computer unless `MONEYOS_ASSISTANT_ALLOW_REMOTE=true`; questions limited to 500 characters and 10 earlier turns; every money figure in an answer checked against the tool results |
 | Account deletion | `POST /api/v1/auth/delete-account` with the password and `confirm: true` permanently deletes the account and every record it owns |
 | Local-only by default | `moneyos serve` binds to `127.0.0.1` and refuses other addresses unless `--allow-network` is given (see TLS below) |
 | Input validation | Pydantic models with length, pattern and precision limits; unknown fields rejected; CSV values validated per row |
@@ -62,6 +63,10 @@ Only someone with access to your machine can do this.
 - **Previews linger.** Previewed but never committed or discarded batches
   keep their staged rows.
 - **Dependency vulnerabilities** are not yet scanned (`pip-audit` planned).
+- **The assistant can be misled.** Text in transaction descriptions
+  reaches the model, and a description written to manipulate it could make
+  an answer wrong (the tools are read-only, so it cannot do more). Figures it
+  invents are flagged by the grounding check, but wording is not checked.
 - **PDF parsing is complex.** `pdfminer` (via `pdfplumber`) parses
   untrusted PDFs in the server process. The limits above bound the work,
   but a parser bug could still be triggered by a crafted file; the server

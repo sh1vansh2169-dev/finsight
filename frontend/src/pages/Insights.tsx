@@ -12,6 +12,7 @@ const TABS = [
   { to: "/insights/budgets", label: "Budgets", end: false },
   { to: "/insights/bills", label: "Bills & income", end: false },
   { to: "/insights/what-if", label: "What if", end: false },
+  { to: "/insights/ask", label: "Ask", end: false },
 ];
 
 /** Insights and planning, as tabs. */

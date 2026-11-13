@@ -40,11 +40,12 @@ def test_everything_needs_sign_in_except_health_and_auth(make_client):
     client = make_client()
     assert client.get("/health").status_code == 200
     for path in ("/api/v1/transactions", "/api/v1/summary", "/api/v1/dashboard", "/api/v1/majra/people",
-                 "/api/v1/ml/categorizer", "/api/v1/recurring", "/api/v1/auth/me"):
+                 "/api/v1/ml/categorizer", "/api/v1/recurring", "/api/v1/auth/me", "/api/v1/assistant/status"):
         response = client.get(path)
         assert response.status_code == 401, path
         assert response.headers["www-authenticate"] == "Bearer"
     assert client.get("/api/v1/transactions", headers={"Authorization": "Bearer made-up"}).status_code == 401
+    assert client.post("/api/v1/assistant/ask", json={"question": "hi"}).status_code == 401
 
 
 def test_register_login_me_logout(make_client):

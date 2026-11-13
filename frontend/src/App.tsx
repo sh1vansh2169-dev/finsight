@@ -30,6 +30,7 @@ export const routes = [
           { path: "budgets", ...page(async () => ({ Component: (await import("./pages/Budgets")).Budgets })) },
           { path: "bills", ...page(async () => ({ Component: (await import("./pages/Bills")).Bills })) },
           { path: "what-if", ...page(async () => ({ Component: (await import("./pages/WhatIf")).WhatIf })) },
+          { path: "ask", ...page(async () => ({ Component: (await import("./pages/Ask")).Ask })) },
         ],
       },
       { path: "profile", ...page(async () => ({ Component: (await import("./pages/Profile")).Profile })) },

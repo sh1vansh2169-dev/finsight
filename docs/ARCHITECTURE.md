@@ -211,6 +211,36 @@ no CORS, and the session cookie never leaves the site.
   colours were checked for at least 4.5:1 contrast and form borders for
   3:1 in both themes.
 
+### The assistant (`assistant/`)
+
+A local language model answers questions, but never supplies figures:
+
+```
+question ─► model ─► tool call(s) ─► read-only MoneyOS functions ─► results ─► model ─► answer
+                                                                     │                    │
+                                                                     └──► grounding check ◄┘
+```
+
+- **Tools** (`tools.py`) call the same API functions the web app uses, so
+  answers use the figures on screen, as exact decimal strings, inside the
+  signed-in user's session (tenancy applies). None of them writes anything.
+  Bad arguments come back to the model as an error it can correct.
+- **The loop** (`agent.py`) allows at most 5 rounds of tool calls, keeps each
+  tool result under 6,000 characters, and runs the model at temperature 0.
+- **The grounding check** (`grounding.py`) finds every money-like figure in
+  the answer (currency marks, decimals, 1,000 or more, percentages; not
+  small counts, dates or bare years) and looks it up among the tool results
+  and the question, exactly or rounded to whole rupees, ignoring sign. What
+  is not found is returned as `unverified_figures` and shown as such. A sum
+  the model worked out itself is flagged: that is intended.
+- **The model client** (`ollama.py`) uses Ollama's chat API with the
+  standard library only. It refuses a non-local address unless
+  `MONEYOS_ASSISTANT_ALLOW_REMOTE=true`, because the model reads money data.
+- **Untrusted text**: transaction descriptions come from bank files and
+  reach the model inside tool results. The system prompt tells the model
+  they are data; more importantly, the tools are read-only, so a hostile
+  description can at worst mislead an answer, not change data or move money.
+
 ### Commitments and the what-if simulator
 **Recurring detection** (`analytics/recurring.py`) groups payments by a
 cleaned merchant name and accepts a series when at least 75% of the gaps
