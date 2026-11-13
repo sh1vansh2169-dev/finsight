@@ -66,3 +66,9 @@ data quality.
   the same data and protocol. Caution for B: the simulator's commitments are
   perfectly regular by construction, which flatters any model that is told
   about them; a fair test needs late, missing and changed bills too.
+- 2026-11-13: **Model B tested** (ML_EXPERIMENTS.md, E5; plan committed
+  before the run). Realistic condition: recorded bills cut 7-day forecast
+  error by 31% (27% like for like), meeting the pre-set criterion; no gain
+  at 30 days. Driven by rent timing; realistic bill mess halves the ideal
+  gain. Synthetic only. Next: Models C and D, and a literature review
+  before any claim.

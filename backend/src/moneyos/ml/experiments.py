@@ -203,6 +203,61 @@ def run_forecasting(out: Path, *, profile_seeds=tuple(range(1, 21)), days: int =
     return results
 
 
+# --------------------------------------------- research Model B (E5)
+
+
+def run_bills(out: Path, *, profile_seeds=tuple(range(1, 21)), days: int = 730) -> dict:
+    """E5: transaction-only forecasts (Model A) vs adding recorded bills (Model B)."""
+    from moneyos.ml import bills_forecast as bf
+    from moneyos.ml import forecasting as fc
+    from moneyos.ml.spending_sim import make_profile, simulate
+
+    out.mkdir(parents=True, exist_ok=True)
+    people = [(make_profile(s), simulate(make_profile(s), days=days)) for s in profile_seeds]
+    conditions = {}
+    for condition in bf.CONDITIONS:
+        frames = [bf.build(p, f, condition) for p, f in people]
+        table = bf.run(frames)
+        table.to_csv(out / f"forecasts_{condition}.csv", index=False)
+        bill_share = float(sum((f["paid_recorded"] + f["paid_unrecorded"]).sum() for f in frames)
+                           / sum(f["total"].sum() for f in frames))
+        conditions[condition] = {"bill_share_of_spending": bill_share,
+                                 "horizons": {str(h): r for h, r in bf.evaluate(table).items()}}
+    results = {
+        "experiment": "E5 research Model B: recorded upcoming bills (synthetic)",
+        "run_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "profiles": list(profile_seeds),
+        "days_per_profile": days,
+        "realism": {"ideal": str(bf.IDEAL), "realistic": str(bf.REALISTIC)},
+        "criterion": "Realistic condition: B test MAE at least 5% below A, and the 95% bootstrap interval of the "
+                     "MAE difference (people resampled) excludes zero. Plan fixed before running (ML_EXPERIMENTS.md).",
+        "protocol": {"horizons": list(fc.HORIZONS), "first_origin": fc.FIRST_ORIGIN, "origin_step": fc.ORIGIN_STEP,
+                     "calibration_start_day": fc.CAL_START, "test_start_day": fc.TEST_START},
+        "conditions": conditions,
+    }
+    (out / "results.json").write_text(json.dumps(results, indent=2, default=str), encoding="utf-8")
+
+    lines = [f"# {results['experiment']}", "",
+             f"Run {results['run_at']}: {len(profile_seeds)} simulated people x {days} days. **Synthetic data only.**",
+             "", f"Criterion: {results['criterion']}", ""]
+    for condition, c in conditions.items():
+        lines += [f"## Condition: {condition}", "",
+                  f"Bills are {c['bill_share_of_spending']:.0%} of all spending.", ""]
+        for h, r in c["horizons"].items():
+            lo, hi = r["difference_ci95"]
+            lines += [f"### Next {h} days", "",
+                      f"Chosen on calibration: A = **{r['chosen_a']}**, B = **{r['chosen_b']}**. "
+                      f"Test MAE {r['mae_a']:,.0f} (A) vs {r['mae_b']:,.0f} (B): {r['relative_change']:+.1%}; "
+                      f"95% interval of B - A: {lo:,.0f} to {hi:,.0f}. "
+                      f"Meets the criterion: **{'yes' if r['meets_criterion'] else 'no'}**.", "",
+                      "| Method | Test MAE | Test RMSE | 80% interval coverage | Interval width |", "|---|---|---|---|---|"]
+            for m, s in sorted(r["methods"].items(), key=lambda kv: kv[1]["mae"]):
+                lines.append(f"| {m} | {s['mae']:,.0f} | {s['rmse']:,.0f} | {s['coverage']:.0%} | {s['mean_width']:,.0f} |")
+            lines.append("")
+    (out / "report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return results
+
+
 # ------------------------------------------------------- anomaly detection
 
 ANOMALY_SELECTION_RULE = (

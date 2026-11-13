@@ -21,7 +21,7 @@ the results (including failures), and the decision taken.
 | # | Problem | Baseline(s) | Candidates | Metrics | Status |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Transaction categorisation | Keyword rules (`default_rules.toml`), majority class | TF-IDF + Logistic Regression, Random Forest, XGBoost | Per-class precision/recall/F1, macro-F1, confusion matrix, coverage at a confidence threshold | **E1 done (synthetic).** Re-run on real corrections (`category_basis = user`) when they exist |
-| 2 | Spending / cash-flow forecasting | Historical mean, last period, moving average | Exponential smoothing, SARIMA, Linear Regression, Random Forest, XGBoost | MAE, RMSE, MAPE per horizon; interval coverage | **E2 done (synthetic)**: no model beat the baselines. Next: research Models B–D |
+| 2 | Spending / cash-flow forecasting | Historical mean, last period, moving average | Exponential smoothing, SARIMA, Linear Regression, Random Forest, XGBoost | MAE, RMSE, MAPE per horizon; interval coverage | **E2 done (synthetic)**: no model beat the baselines. **E5**: adding recorded bills (Model B) helps 7-day forecasts, not 30-day. Next: Models C–D |
 | 3 | Anomaly detection | z-score / IQR per category, personal median | Isolation Forest, LOF | Precision/recall on injected anomalies; false-positive rate per month | **E3 done (synthetic)**: personal z-scores won |
 | 4 | Missing-data impact | Complete data | Data with records removed under MCAR / MAR / MNAR mechanisms | Change in forecast MAE/RMSE by missingness level | Not started |
 | 5 | Duplicate-pair scoring | Hand-weighted matcher (E0 below) | Logistic regression on the same features, trained on user review decisions | Precision/recall at the review threshold; review items per true duplicate | Not started. Needs real review decisions |
@@ -312,3 +312,42 @@ Model A (chosen on calibration), *and* the 95% bootstrap interval of the MAE
 difference, resampling people (2,000 resamples, seed 0), excludes zero.
 Otherwise the result is reported as no improvement. The ideal condition is
 never used to claim an improvement.
+
+**Command.** `moneyos ml bills` (report: `data/experiments/bills/report.md`).
+Run 2026-11-13. Bills are 31% of spending. Sanity check: Model A on the
+ideal condition reproduces E2 (same window last month 5,834 vs 5,837 in E2;
+historical mean 7,207 in both).
+
+Results on test, each family's method chosen on calibration:
+
+| Condition | Horizon | Model A (chosen) | Model B (chosen) | Change | 95% interval of B - A | Criterion met |
+| --- | --- | --- | --- | --- | --- | --- |
+| realistic (primary) | 7 days | 8,097 (same window last month) | 5,564 (historical mean) | -31.3% | -4,060 to -1,037 | **yes** |
+| realistic (primary) | 30 days | 12,468 (historical mean) | 12,492 (historical mean) | +0.2% | -250 to 273 | **no** |
+| ideal (upper bound) | 7 days | 5,834 | 3,585 | -38.6% | -2,963 to -1,586 | (not used) |
+| ideal (upper bound) | 30 days | 10,535 | 10,322 | -2.0% | -532 to 57 | (not used) |
+
+**Exploratory analysis (not planned in advance).** The pre-registered
+comparison pits each family's *chosen* method against the other's, so part of
+the 7-day gain is that calibration picked a weaker baseline for A. With the
+same baseline in both (historical mean), recorded bills cut 7-day error by
+27.1% on the realistic condition and 50.3% on the ideal one; at 30 days the
+change is +0.2% and -2.0%. The 7-day gain comes from people who pay rent
+(-28.1%); the 2 people without rent gain about 4%, too few to say more.
+
+**Interpretation.** On this synthetic data, recorded bills help short
+horizons and not monthly ones. A 30-day window almost always contains one of
+each monthly bill, which an average of past spending already captures; a
+7-day window either contains the rent or does not, and only the record
+knows which. Realistic mess (unrecorded, late, missed, changed and cancelled
+bills) roughly halves the benefit but does not remove it.
+
+**Limits.** Synthetic people whose bills are monthly by construction; the
+amount of mess in the realistic condition is my assumption, not measured;
+one large bill (rent) drives the result; 20 people. This supports Model B
+for 7-day horizons *in simulation*; it is not evidence about real people.
+
+**Decision.** The what-if simulator (Phase 7) already forecasts as Model B
+does (recorded commitments plus average everyday spending), which this
+supports for short horizons. No change to the app. Models C and D (adding
+liabilities, expected repayments and coverage indicators) remain open.

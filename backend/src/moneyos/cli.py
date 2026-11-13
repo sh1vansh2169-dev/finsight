@@ -52,7 +52,7 @@ def _build_parser() -> argparse.ArgumentParser:
     user.add_argument("--password-stdin", action="store_true", help="read the password from standard input")
 
     ml = commands.add_parser("ml", help="run a machine-learning experiment")
-    ml.add_argument("experiment", choices=["categorization", "forecasting", "anomaly", "clustering"])
+    ml.add_argument("experiment", choices=["categorization", "forecasting", "anomaly", "clustering", "bills"])
     ml.add_argument("--out", help="results folder (default: data/experiments/<experiment>)")
     ml.add_argument("--save-model", default="data/models", help="where to save the selected model ('' to skip)")
 
@@ -373,6 +373,10 @@ def main(argv: list[str] | None = None) -> int:
         elif args.experiment == "clustering":
             experiments.run_clustering(out)
             print(f"Results in {out / 'report.md'}")
+        elif args.experiment == "bills":
+            results = experiments.run_bills(out)
+            verdict = {c: {h: r["meets_criterion"] for h, r in v["horizons"].items()} for c, v in results["conditions"].items()}
+            print(f"Meets the criterion (condition -> horizon): {verdict}; results in {out / 'report.md'}")
         elif args.experiment == "anomaly":
             results = experiments.run_anomaly(out)
             print(f"Chosen {results['chosen']}; results in {out / 'report.md'}")
