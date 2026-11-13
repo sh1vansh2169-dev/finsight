@@ -12,6 +12,13 @@ function stored(): ThemeChoice {
   }
 }
 
+/** Apply the saved or system theme before the first paint, then allow colour transitions,
+ * so a dark-mode user never sees the page start light and fade. Called once in main.tsx. */
+export function applyInitialTheme(): void {
+  apply(stored());
+  requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.add("theme-ready")));
+}
+
 function apply(choice: ThemeChoice) {
   const dark = choice === "dark" || (choice === "system" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
   document.documentElement.dataset.theme = dark ? "dark" : "light";

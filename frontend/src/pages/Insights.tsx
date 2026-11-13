@@ -20,11 +20,11 @@ export function Insights() {
   return (
     <>
       <PageTitle title="Insights" subtitle="Patterns in your recorded money, and plans for what comes next. Suggestions only; nothing happens automatically." />
-      <nav aria-label="Insights sections" className="mb-5 flex gap-1 overflow-x-auto border-b border-line">
+      <nav aria-label="Insights sections" className="mb-5 flex gap-2 overflow-x-auto pb-1">
         {TABS.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.end}
             className={({ isActive }) =>
-              `whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${isActive ? "border-primary text-primary-ink" : "border-transparent text-muted hover:text-ink"}`}>
+              `press whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${isActive ? "bg-primary text-on-primary shadow-[0_10px_24px_-12px_var(--primary)]" : "glass text-ink-2"}`}>
             {t.label}
           </NavLink>
         ))}

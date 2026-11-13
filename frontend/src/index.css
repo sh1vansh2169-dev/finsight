@@ -1,63 +1,74 @@
 @import "tailwindcss";
+@import "@fontsource-variable/inter";
 
 /* Dark mode follows data-theme on <html> (set from the user's choice or the system). */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* Semantic tokens. Every text/background pair used here was checked for
-   WCAG AA contrast (>= 4.5:1) in both themes. */
+/* "Fluid" design: soft frosted surfaces over a calm page, one red accent, gentle motion.
+   Every text/background pair below was checked for WCAG AA in both themes (text >= 4.5:1,
+   form-control edges >= 3:1), with frosted surfaces measured as blended over the page. */
 :root {
-  --page: #faf7f0;
-  --surface: #ffffff;
-  --surface-2: #f3efe5;
-  --border: #e6e0d2; /* decorative edges only */
-  --field: #8a8474; /* form-control edges: >= 3:1 on every background */
-  --ink: #1e241d;
-  --ink-2: #4e564c;
-  --muted: #626a5f;
-  --primary: #4a6d40;
+  --page: #eef0f3;
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-solid: #ffffff;
+  --surface-2: #e6e8ed;
+  --border: rgba(20, 24, 40, 0.08); /* decorative edges only */
+  --field: #80858f;
+  --ink: #15171c;
+  --ink-2: #3d424c;
+  --muted: #585e69;
+  --primary: #d3132a;
   --on-primary: #ffffff;
-  --primary-ink: #3b5a33;
-  --primary-soft: #e4ecdd;
-  --accent: #255fa8; /* money in */
-  --out: #a34a24; /* money out: calm, never alarm red */
+  --primary-ink: #b30f23;
+  --primary-soft: #fbe3e6;
+  --accent: #0b7a52; /* money in */
+  --out: #3d424c; /* money out: plain, never alarm red; the sign carries the meaning */
   --warn-ink: #7a4f00;
   --warn-bg: #fcf1d8;
-  --danger-ink: #a8261b;
-  --chart-in: #2a78d6;
-  --chart-out: #eb6834;
-  --chart-grid: #e1e0d9;
-  --unknown: #f0efec;
+  --danger-ink: #b30f23;
+  --chart-in: #0b7a52;
+  --chart-out: #d3132a;
+  --chart-grid: #dfe2e8;
+  --unknown: #e6e8ed;
+  --shadow: 0 12px 32px -16px rgba(20, 24, 40, 0.28);
+  --glow-a: rgba(211, 19, 42, 0.16);
+  --glow-b: rgba(80, 110, 255, 0.14);
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --page: #121512;
-  --surface: #1a1e19;
-  --surface-2: #232822;
-  --border: #2e352c;
-  --field: #6f786b;
-  --ink: #eceee8;
-  --ink-2: #bcc3b7;
-  --muted: #a0a89b;
-  --primary: #93b787;
-  --on-primary: #10140f;
-  --primary-ink: #a9c99c;
-  --primary-soft: #26301f;
-  --accent: #82b2ee;
-  --out: #f0a07c;
+  --page: #0d0e11;
+  --surface: rgba(30, 32, 38, 0.82);
+  --surface-solid: #1b1d22;
+  --surface-2: #22252c;
+  --border: rgba(255, 255, 255, 0.07);
+  --field: #737986;
+  --ink: #f3f4f6;
+  --ink-2: #c9ccd3;
+  --muted: #a3a8b3;
+  --primary: #e5162b;
+  --on-primary: #ffffff;
+  --primary-ink: #ff7a86;
+  --primary-soft: #3a1519;
+  --accent: #5ad49a;
+  --out: #d4d6dc;
   --warn-ink: #f1c46b;
   --warn-bg: #2c2414;
-  --danger-ink: #f4958c;
-  --chart-in: #3987e5;
-  --chart-out: #d95926;
-  --chart-grid: #2c2c2a;
-  --unknown: #2a2e28;
+  --danger-ink: #ff7a86;
+  --chart-in: #5ad49a;
+  --chart-out: #e5162b;
+  --chart-grid: #2a2d35;
+  --unknown: #22252c;
+  --shadow: 0 12px 32px -14px rgba(0, 0, 0, 0.7);
+  --glow-a: rgba(229, 22, 43, 0.22);
+  --glow-b: rgba(80, 110, 255, 0.18);
   color-scheme: dark;
 }
 
 @theme inline {
   --color-page: var(--page);
   --color-surface: var(--surface);
+  --color-surface-solid: var(--surface-solid);
   --color-surface-2: var(--surface-2);
   --color-line: var(--border);
   --color-field: var(--field);
@@ -73,14 +84,20 @@
   --color-warn-ink: var(--warn-ink);
   --color-warn-bg: var(--warn-bg);
   --color-danger-ink: var(--danger-ink);
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --radius-card: 1.25rem;
+  --font-sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius-card: 1.75rem;
 }
 
 html,
 body {
   background: var(--page);
   color: var(--ink);
+}
+
+/* Theme changes fade, but only after the first paint (see applyInitialTheme). */
+html.theme-ready,
+html.theme-ready body {
+  transition: background-color 0.5s ease, color 0.5s ease;
 }
 
 body {
@@ -90,6 +107,59 @@ body {
 
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* Frosted card surface. */
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  box-shadow: var(--shadow);
+}
+
+/* ------------------------------------------------------------ motion */
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fill-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(24px, 18px); }
+}
+
+/* Each page glides in when opened; its direct children follow one after another. */
+.page-enter > * {
+  animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.page-enter > *:nth-child(2) { animation-delay: 0.06s; }
+.page-enter > *:nth-child(3) { animation-delay: 0.12s; }
+.page-enter > *:nth-child(4) { animation-delay: 0.18s; }
+.page-enter > *:nth-child(5) { animation-delay: 0.24s; }
+.page-enter > *:nth-child(n + 6) { animation-delay: 0.3s; }
+
+.rise { animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.fill-x { transform-origin: left; animation: fill-x 1.1s 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Tactile press feedback on buttons, links styled as buttons, and tappable cards. */
+.press {
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s, color 0.2s, opacity 0.2s;
+}
+.press:active:not(:disabled) {
+  transform: scale(0.965);
+}
+
+/* The sliding pill behind the active tab: a little overshoot, like a spring. */
+.nav-pill {
+  transition: transform 0.45s cubic-bezier(0.3, 1.35, 0.5, 1), opacity 0.2s;
+}
+
+.glow {
+  animation: drift 14s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

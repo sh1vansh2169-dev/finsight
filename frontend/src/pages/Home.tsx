@@ -4,7 +4,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { useDashboard } from "../api/hooks";
 import type { Dashboard, SeriesPoint } from "../api/types";
 import { PageTitle } from "../components/AppShell";
-import { Amount, Card, EmptyState, ErrorNote, Loading, Notice } from "../components/ui";
+import { Amount, Card, CountUp, EmptyState, ErrorNote, Loading, Notice } from "../components/ui";
 import { categoryLabel, money, monthLabel, shortDate, signedMoney } from "../lib/format";
 
 export function Home() {
@@ -27,11 +27,20 @@ export function Home() {
   return (
     <>
       <PageTitle title={monthLabel(d.month)} subtitle={d.note} />
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label="Income" value={money(d.summary.income, c)} tone="in" />
-        <Stat label="Spending (after refunds)" value={money(d.summary.spending, c)} tone="out" />
-        <Stat label="Net cash flow" value={<Amount value={d.summary.net_cash_flow} currency={c} />} />
-      </div>
+      <section aria-label="This month" className="rounded-[var(--radius-card)] bg-primary p-6 text-on-primary shadow-[0_22px_44px_-20px_var(--primary)]">
+        <p className="text-sm">Net cash flow</p>
+        <p className="mt-1 text-4xl font-light tracking-tight sm:text-5xl"><CountUp value={d.summary.net_cash_flow} currency={c} signed /></p>
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <div className="rounded-2xl bg-black/15 p-3">
+            <p className="text-xs">Income</p>
+            <p className="tabular mt-0.5 text-lg font-semibold">{money(d.summary.income, c)}</p>
+          </div>
+          <div className="rounded-2xl bg-black/15 p-3">
+            <p className="text-xs">Spending (after refunds)</p>
+            <p className="tabular mt-0.5 text-lg font-semibold">{money(d.summary.spending, c)}</p>
+          </div>
+        </div>
+      </section>
 
       {d.warnings.length > 0 && (
         <div className="mt-4 flex flex-col gap-2">
@@ -65,7 +74,7 @@ export function Home() {
                   </div>
                   <div className="mt-1 h-2 rounded-full bg-surface-2" role="progressbar" aria-valuenow={b.percent_used}
                     aria-valuemin={0} aria-valuemax={100} aria-label={`${b.category} budget used`}>
-                    <div className={`h-2 rounded-full ${b.state === "over" ? "bg-out" : "bg-primary"}`}
+                    <div className={`fill-x h-2 rounded-full ${b.state === "over" ? "bg-out" : "bg-primary"}`}
                       style={{ width: `${Math.min(b.percent_used, 100)}%` }} />
                   </div>
                   <p className="mt-1 text-xs text-muted">{b.message}</p>
@@ -107,14 +116,6 @@ export function Home() {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: React.ReactNode; tone?: "in" | "out" }) {
-  return (
-    <div className="rounded-[var(--radius-card)] border border-line bg-surface p-5">
-      <p className="text-sm text-muted">{label}</p>
-      <p className={`tabular mt-1 text-2xl font-semibold ${tone === "in" ? "text-accent" : tone === "out" ? "text-out" : ""}`}>{value}</p>
-    </div>
-  );
-}
 
 function DailyChart({ points, currency }: { points: SeriesPoint[]; currency: string }) {
   const unknownDays = points.filter((p) => p.coverage === 0).length;
@@ -137,7 +138,7 @@ function DailyChart({ points, currency }: { points: SeriesPoint[]; currency: str
               contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--ink)" }}
               formatter={(v) => (v === null || v === undefined ? "No statement: unknown" : money(String(v), currency))}
               labelFormatter={(day) => `Day ${day}`} />
-            <Bar dataKey="spending" fill="var(--chart-out)" radius={[4, 4, 0, 0]} maxBarSize={14} name="Spending" />
+            <Bar dataKey="spending" fill="var(--chart-out)" radius={[6, 6, 6, 6]} maxBarSize={12} name="Spending" animationDuration={900} />
           </BarChart>
         </ResponsiveContainer>
       </div>

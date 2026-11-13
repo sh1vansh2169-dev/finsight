@@ -12,12 +12,27 @@ developer analytics tool.
 
 ## Visual direction
 
-- Light-first: warm cream or white background.
-- Sage green primary accent, restrained blue accents.
-- Rounded cards, clear typography, subtle borders, generous spacing.
-- Simple icons, restrained animation.
-- Optional dark theme.
-- Accessible, readable, responsive.
+**"Fluid" (chosen 2026-11-13, replacing the original sage-green look).** Inspired
+by the feel of OnePlus's OxygenOS, as an original design: no OnePlus screens,
+assets or fonts are used.
+
+- Soft grey (light) or near-black (dark) page; frosted-glass cards with large
+  rounded corners and soft shadows; slowly drifting colour glows behind them.
+- One red accent for the active tab, primary buttons and the Home hero card.
+  Money in is green; money out is plain text with a minus sign (never alarm red).
+- Inter, bundled with the app (the CSP blocks font CDNs). Light weights for big figures.
+- Motion: pages and cards glide in one after another; the Home net figure counts
+  up and always ends on the exact amount from the server (screen readers get
+  it at once); budget bars fill; a floating tab bar on phones with a pill that
+  slides to the open section; press feedback on buttons. All motion stops under
+  "reduce motion".
+- Light and dark follow the system unless chosen (quick switch on every
+  screen); the theme is applied before the first paint, so there is no flash.
+- Accessible: every text colour pair checked at 4.5:1 and form edges at 3:1,
+  frosted surfaces measured as blended over the page.
+
+The design directions that were compared live in the "FinSight style
+directions" canvas (A Calm Ledger, B Night Vault, C Clear Blue, D Fluid).
 
 ## Navigation
 

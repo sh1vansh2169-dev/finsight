@@ -16,7 +16,7 @@ the foundation for later analytics, forecasting and ML work.
 
 ## What works today
 
-All of this is covered by automated tests (901 backend tests, many of them property-based checks over random cases, and 43 web-app tests, all passing at the last run; see
+All of this is covered by automated tests (901 backend tests, many of them property-based checks over random cases, and 47 web-app tests, all passing at the last run; see
 [DEVELOPMENT.md](docs/DEVELOPMENT.md) to run them yourself).
 
 | Area | Implemented |
@@ -47,7 +47,7 @@ All of this is covered by automated tests (901 backend tests, many of them prope
 | Accounts and privacy | Sign-up, sign-in and sign-out; passwords hashed with scrypt; revocable sessions stored only as hashes; lockout after repeated failures; every user sees only their own data, enforced in the database layer; delete your account and all your data |
 | Data separation | Sample and real data live in separate, stamped databases that refuse to be mixed |
 | Assistant | Ask questions in plain words (Insights → Ask). A local model (Ollama) answers using read-only FinSight tools, so figures come from FinSight, not the model; every money figure in an answer is checked against those tools and any it cannot find is marked unverified; the tool results are shown. Data stays on your computer by default. Tested against a stand-in model only so far |
-| Web app | React + TypeScript + Tailwind, served by the backend: sign-in; Home (month figures, daily chart with uncovered days as gaps, 30-day outlook, budgets, Money Majra, recent transactions); Transactions (search, filters, category and type corrections, two-step statement import, possible-duplicate markers, duplicate review with undo, suggested categories to accept); Money Majra (add people and groups, shared expenses split equally or by exact amounts, percentages or shares, loans, repayments with a repeat-payment check, cancel an entry with a reason); Insights (suggestions, unusual payments you can mark as expected, spending by category, budgets, bills and income: upcoming payments, commitments, detected regular payments to confirm, and the what-if simulator); Profile (theme, sign out, delete account). Light and dark themes; phone and desktop layouts |
+| Web app | React + TypeScript + Tailwind, served by the backend: sign-in; Home (month figures, daily chart with uncovered days as gaps, 30-day outlook, budgets, Money Majra, recent transactions); Transactions (search, filters, category and type corrections, two-step statement import, possible-duplicate markers, duplicate review with undo, suggested categories to accept); Money Majra (add people and groups, shared expenses split equally or by exact amounts, percentages or shares, loans, repayments with a repeat-payment check, cancel an entry with a reason); Insights (suggestions, unusual payments you can mark as expected, spending by category, budgets, bills and income: upcoming payments, commitments, detected regular payments to confirm, and the what-if simulator); Profile (theme, sign out, delete account). "Fluid" design: frosted cards, a red accent, smooth motion (pages glide in, figures count up, a sliding tab pill), light and dark, phone and desktop layouts; motion stops under "reduce motion" |
 
 ## Not built yet
 
