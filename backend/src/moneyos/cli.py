@@ -70,6 +70,9 @@ def _build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--sample", action="store_true", help="serve the synthetic sample database")
     serve.add_argument("--watch", metavar="FOLDER",
                        help="statement inbox: statements saved in FOLDER are picked up for review")
+    serve.add_argument("--phone", action="store_true",
+                       help="also serve HTTPS on your home network for the FinSight phone app (port --phone-port)")
+    serve.add_argument("--phone-port", type=int, default=8443)
     serve.add_argument("--gmail", action="store_true",
                        help="with --watch: fetch statements and alert emails from Gmail every 30 minutes")
     serve.add_argument("--allow-network", action="store_true",
@@ -397,7 +400,35 @@ def _cmd_serve(args) -> int:
     if settings.watch_dir:
         print(f"Statement inbox: {settings.watch_dir.resolve()} (statements saved here appear in the app for review)")
     # access_log is off: URLs can carry filter values such as merchant names.
-    uvicorn.run(app, host=args.host, port=args.port, access_log=False)
+    if not args.phone:
+        uvicorn.run(app, host=args.host, port=args.port, access_log=False)
+        return 0
+
+    import asyncio
+
+    from moneyos import tls
+
+    addresses = tls.lan_addresses()
+    if not addresses:
+        print("error: this computer has no home-network address; connect to Wi-Fi first", file=sys.stderr)
+        return 2
+    tls_dir = Path("data/tls")
+    cert, key = tls.ensure_server_cert(tls_dir, addresses)
+    print(f"Phone app (HTTPS on your home network): " + ", ".join(f"https://{a}:{args.phone_port}" for a in addresses))
+    print(f"  certificate signed by FinSight's local CA {tls_dir / 'ca.pem'} "
+          f"(SHA-256 {tls.fingerprint(tls_dir / 'ca.pem')[:23]}...)")
+    local = uvicorn.Config(app, host=args.host, port=args.port, access_log=False)
+    # The second server shares the app; its startup (inbox watcher, Gmail) already runs in the first.
+    phone = uvicorn.Config(app, host="0.0.0.0", port=args.phone_port, access_log=False, lifespan="off",  # noqa: S104
+                           ssl_certfile=str(cert), ssl_keyfile=str(key))
+
+    async def both() -> None:
+        await asyncio.gather(uvicorn.Server(local).serve(), uvicorn.Server(phone).serve())
+
+    try:
+        asyncio.run(both())
+    except KeyboardInterrupt:  # Ctrl+C: both servers have already shut down
+        pass
     return 0
 
 

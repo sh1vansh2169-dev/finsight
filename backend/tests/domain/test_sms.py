@@ -133,3 +133,20 @@ def test_an_alert_and_the_same_payment_in_a_statement_are_one_payment(make_txn):
                           account="HDFC Savings", reference="412345678901")]
     result = deduplicate([statement, alert])
     assert len(result.unique) == 1 and len(result.duplicates) == 1
+
+
+@pytest.mark.parametrize("text", [
+    "Sent Rs.500.00 From HDFC Bank A/C *1234 To SWIGGY On 12/03/26 Ref 412345678901. Never share your OTP/PIN with anyone.",
+    "Rs 250 debited from A/c XX1234 to RAVI. Do not share OTP, PIN or CVV with anyone. -Bank",
+])
+def test_a_safety_footer_does_not_hide_a_real_alert(text):
+    assert read_alert("HDFCBK", stamp(date(2026, 3, 12)), text) is not None
+
+
+@pytest.mark.parametrize("text", [
+    "482913 is your OTP for a transaction of Rs.5000 at AMAZON. Do not share it.",
+    "Use verification code 7731 to approve Rs.1,200 debited from your card.",
+    "One time password for Rs 999 spent at NETFLIX is 551288",
+])
+def test_otp_messages_are_still_dropped_whatever_the_word_order(text):
+    assert read_alert("HDFCBK", stamp(date(2026, 3, 12)), text) is None

@@ -4,6 +4,7 @@ import { useDeleteAccount, useHealth, useMe, useSignOut } from "../api/hooks";
 import { PageTitle } from "../components/AppShell";
 import { Button, Card, ErrorNote } from "../components/ui";
 import { type ThemeChoice, useTheme } from "../lib/theme";
+import { PhoneCard } from "./PhoneCard";
 
 export function Profile() {
   const me = useMe();
@@ -22,8 +23,8 @@ export function Profile() {
           <fieldset className="flex flex-wrap gap-2">
             <legend className="sr-only">Theme</legend>
             {(["system", "light", "dark"] as ThemeChoice[]).map((choice) => (
-              <label key={choice} className={`cursor-pointer rounded-xl border px-4 py-2 text-sm ${
-                theme === choice ? "border-primary bg-primary-soft text-primary-ink" : "border-line"}`}>
+              <label key={choice} className={`press cursor-pointer rounded-full px-4 py-2 text-sm font-medium ${
+                theme === choice ? "bg-primary text-on-primary" : "bg-surface-2 text-ink-2"}`}>
                 <input type="radio" name="theme" value={choice} checked={theme === choice} onChange={() => setTheme(choice)} className="sr-only" />
                 {choice === "system" ? "Match my device" : choice === "light" ? "Light" : "Dark"}
               </label>
@@ -31,6 +32,7 @@ export function Profile() {
           </fieldset>
         </Card>
       </div>
+      <PhoneCard />
       <DeleteAccount />
       <p className="mt-6 text-xs text-muted">FinSight {health.data?.version}{health.data?.sample_data ? " · sample data" : ""}</p>
     </>

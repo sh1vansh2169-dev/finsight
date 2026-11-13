@@ -24,6 +24,7 @@ store real financial data in it on a shared machine.**
 | Upload limits | 5 MB per file; only the base name of the uploaded file name is kept. Excel and PDF: at most 20,000 rows and 100 pages, 50 MB unpacked for an .xlsx, XML parsed with `defusedxml`. The file type is read from the content, never from the name |
 | SMS backups | Parsed with `defusedxml`; up to 50 MB. Only transaction alerts are kept (sender, timestamp and the alert text, for traceability); OTPs and all other messages are discarded while reading and never stored |
 | Gmail | Read-only scope (`gmail.readonly`); OAuth with PKCE and a state check; the sign-in reply is received only on `127.0.0.1`. Uses the user's own Google Cloud client. The refresh token is stored in `data/gmail/token.json` (git-ignored); `moneyos gmail disconnect` deletes it, and access can be revoked at https://myaccount.google.com/permissions. Attachment names are sanitised before saving |
+| Phone app | `serve --phone` adds HTTPS on the home network (the plain-HTTP server stays on 127.0.0.1). FinSight makes its own CA in `data/tls` (private key git-ignored, never leaves the computer); the server certificate is signed by it, renewed when the address changes, and verified the strict way (key identifiers present). The app trusts only that CA besides the system ones and refuses plain HTTP. A phone's key is shown once, stored as a hash, works only for `POST /phone/alerts`, can be disconnected in Profile, and is deleted with the account. The phone filters messages before sending (no OTPs, no personal messages) and the server filters again. The app's storage is private and excluded from backups |
 | Statement passwords | Password-protected PDFs are refused; FinSight never asks for or stores a statement password |
 | Safe database access | SQLAlchemy ORM and bound parameters only; no SQL built from user input |
 | No secrets in code | Configuration via environment variables; `.env` files are git-ignored; `.env.example` holds no values |
@@ -76,6 +77,11 @@ Only someone with access to your machine can do this.
   folder can use it to read your mail until it expires or is revoked. Google
   grants read access to the whole mailbox; FinSight only searches for bank
   emails, but that is its choice, not a limit Google enforces.
+- **Home-network exposure.** With `--phone`, FinSight listens on all
+  addresses on port 8443. It is HTTPS with sign-in, but anyone on the same
+  network can reach the sign-in page; use it on a network you trust.
+- **SMS rules are heuristics.** An unusual alert can be missed, and the
+  phone sends only messages from bank-style senders.
 - **PDF parsing is complex.** `pdfminer` (via `pdfplumber`) parses
   untrusted PDFs in the server process. The limits above bound the work,
   but a parser bug could still be triggered by a crafted file; the server

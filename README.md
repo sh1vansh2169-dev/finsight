@@ -16,7 +16,7 @@ the foundation for later analytics, forecasting and ML work.
 
 ## What works today
 
-All of this is covered by automated tests (901 backend tests, many of them property-based checks over random cases, and 47 web-app tests, all passing at the last run; see
+All of this is covered by automated tests (920 backend tests, many of them property-based checks over random cases, and 50 web-app tests, all passing at the last run; see
 [DEVELOPMENT.md](docs/DEVELOPMENT.md) to run them yourself).
 
 | Area | Implemented |
@@ -25,6 +25,7 @@ All of this is covered by automated tests (901 backend tests, many of them prope
 | Import workflow | Preview → commit or discard, import history, file-hash warning on re-import |
 | SMS alerts | Bank and UPI alert messages from an Android SMS backup (the XML file from *SMS Backup & Restore*), through the inbox or an upload. Only money alerts are kept; OTPs, chats, payment requests, reminders, dues and balance messages are dropped and never stored. Amount, direction, account, UPI reference and payee are read with rules for common Indian bank formats; unreadable alerts are shown, not guessed; failed payments are kept as failed and never counted |
 | Gmail | `moneyos gmail connect` (one-time, read-only, through Google's own sign-in with your own Google Cloud key), then `moneyos gmail fetch` or `serve --watch FOLDER --gmail` (every 30 minutes): statement attachments and alert emails go into the inbox for review. Nothing in the mailbox is changed; each email is handled once. Tested against a stand-in Google server |
+| Phone app (Android) | FinSight in an app, opened from your computer over HTTPS on home Wi-Fi (`moneyos serve --phone`), trusting only FinSight's own certificate authority. With your permission it sends new bank and UPI SMS alerts (and, if you ask, the last 90 days) for review; OTPs and personal messages never leave the phone. The phone's key can only send alerts. **Not yet built or run on a phone**: needs Android Studio; see [frontend/android/README.md](frontend/android/README.md) |
 | Statement inbox | `moneyos serve --watch FOLDER`: statements saved into a folder (for example straight from your bank or UPI app's download) are picked up by themselves and wait in Transactions for your review. A subfolder's name becomes the account. Nothing logs in anywhere and nothing is added without your OK |
 | Duplicates | Exact match by bank reference; occurrence-aware matching otherwise; re-checked at commit time |
 | Duplicate review | Explainable near-duplicate detection across sources (e.g. payment-app export vs bank statement) with a review queue: confirm, reject, undo, all audited. Nothing is merged automatically |

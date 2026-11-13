@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FinSight is reached over HTTPS only. Its certificate is signed by FinSight's own CA on
+     your computer (data/tls/ca.pem, copied into res/raw/finsight_ca.pem when the app is
+     prepared), which this app trusts in addition to the phone's normal authorities.
+     Plain HTTP is refused everywhere. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="@raw/finsight_ca" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -13,6 +13,7 @@ from moneyos.api import auth as auth_api
 from moneyos.api import majra as majra_api
 from moneyos.api import ml as ml_api
 from moneyos.api import assistant as assistant_api
+from moneyos.api import phone as phone_api
 from moneyos.api import planning as planning_api
 from moneyos.api import webapp
 from moneyos.api.deps import current_user
@@ -124,10 +125,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     app.include_router(auth_api.router, prefix="/api/v1")
+    # The phone app's alert route: authenticated by the phone's own key, not a sign-in.
+    app.include_router(phone_api.device_router, prefix="/api/v1")
     # Everything else needs a signed-in user, and sees only that user's data.
     signed_in = [Depends(current_user)]
     for module_router in (router, analytics_api.router, majra_api.router, ml_api.router, planning_api.router,
-                          assistant_api.router):
+                          assistant_api.router, phone_api.router):
         app.include_router(module_router, prefix="/api/v1", dependencies=signed_in)
     # Last: the web app's catch-all route must not shadow any API route.
     webapp.mount(app, settings.frontend_dist)

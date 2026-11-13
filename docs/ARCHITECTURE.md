@@ -416,6 +416,24 @@ alert rules (`domain/sms.py`, `source="Email"`) and written to one CSV. Ids
 of handled emails are kept in `data/gmail/seen.json`, the refresh token in
 `data/gmail/token.json`; both are git-ignored.
 
+### Phone app (`frontend/android`, `services/phone.py`, `tls.py`)
+
+A Capacitor app whose WebView opens FinSight from the computer
+(`server.url`), so the phone shows the same Fluid screens with no second
+code base. Native Java adds what a page cannot do: read SMS. The page talks
+to it through `window.Capacitor.Plugins.FinSightSms` (`src/lib/native.ts`),
+which exists only inside the app.
+
+```
+new SMS ─► SmsReceiver ─► AlertFilter (phone) ─► AlertStore queue ─► AlertSender ─HTTPS─►
+  POST /api/v1/phone/alerts (X-FinSight-Device key) ─► sms rules (server) ─► "Phone SMS" preview ─► user review
+```
+
+Alerts from one phone collect in one waiting preview: each new call rebuilds
+it from the kept rows plus the new ones; a fingerprint of (sender, time,
+text) stops a repeat being staged twice. HTTPS uses a CA made on the
+computer (`tls.py`); the app trusts it through its network security config.
+
 ### Statement inbox (`services/inbox.py`)
 
 A background thread scans the inbox folder every 5 seconds. A file is read

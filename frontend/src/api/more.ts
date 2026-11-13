@@ -198,3 +198,32 @@ export function useImportDetail(id: number | null) {
     enabled: id !== null,
   });
 }
+
+// ---------------------------------------------------------------- phone app
+
+export interface PhoneDevice {
+  id: number;
+  name: string;
+  created_at: string;
+  last_seen_at: string | null;
+}
+
+export function usePhones() {
+  return useQuery({ queryKey: ["phones"], queryFn: () => api<PhoneDevice[]>("/phone/devices") });
+}
+
+export function usePairPhone() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) => api<PhoneDevice & { key: string }>("/phone/devices", { body: { name } }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["phones"] }),
+  });
+}
+
+export function useDisconnectPhone() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/phone/devices/${id}`, { method: "DELETE" }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["phones"] }),
+  });
+}

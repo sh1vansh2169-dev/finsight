@@ -92,6 +92,21 @@ class AuthSession(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
 
 
+class PhoneDevice(Base):
+    """A phone paired with the FinSight phone app. Its key can only send SMS alerts;
+    only a hash of the key is stored, and it can be disconnected at any time."""
+
+    __tablename__ = "phone_devices"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now)
+    last_seen_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    revoked_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+
+
 class Owned:
     """Rows that belong to one user. Queries are restricted to the signed-in
     user automatically (see db/tenancy.py)."""

@@ -45,8 +45,16 @@ HEADER = ["Date", "Description", "Amount", "Account", "Reference", "Status", "Se
 _DEBIT = r"debited|spent|paid|sent|withdrawn|withdrawal|purchase|deducted|transferred"
 _CREDIT = r"credited|received|deposited|refunded|refund|reversed"
 _DIRECTION = re.compile(rf"\b(?:(?P<debit>{_DEBIT})|(?P<credit>{_CREDIT}))\b", re.IGNORECASE)
+# An OTP message carries a code next to the OTP words. Real alerts often END with "never share
+# your OTP/PIN": that footer alone must not hide a payment.
+_OTP_WORDS = r"(?:\botp\b|one[- ]time password|verification code)"
+_OTP = re.compile(
+    _OTP_WORDS + r"[^\n]{0,60}?(?:\bis\b|:|-)\s*\d{4,8}\b"    # "OTP for Rs.5000 at X is 482913", "OTP: 4829"
+    + r"|\b\d{4,8}\s+is\s+(?:your|the)\s+" + _OTP_WORDS     # "482913 is your OTP"
+    + r"|verification code\s*:?\s*\d{4,8}\b",                # "verification code 7731"
+    re.IGNORECASE,
+)
 _NOT_A_TRANSACTION = re.compile(
-    r"\botp\b|one[- ]time password|verification code|\bpin\b.*\bshare\b|"
     r"\bhas requested\b|\brequested money\b|\b(?:collect|payment|money) request\b|\bcollect\b|"
     r"will be (?:debited|credited|deducted)|\bdue\b|minimum amount|"
     r"\bstatement\b|\bmandate\b.*\bcreated\b|\bauto[- ]?pay\b.*\bscheduled\b|\bscheduled\b",
@@ -106,7 +114,7 @@ def read_alert(sender: str, timestamp_ms: int, body: str, *, source: str = "SMS"
     """One message as a row, or None if it is not a transaction alert (it is then forgotten)."""
     text = " ".join(body.split())
     direction = _DIRECTION.search(text)
-    if not direction or _NOT_A_TRANSACTION.search(text):
+    if not direction or _OTP.search(text) or _NOT_A_TRANSACTION.search(text):
         return None
     # A currency mark is enough to keep it: if the amount then cannot be read, the row is shown
     # as unreadable rather than silently dropped.

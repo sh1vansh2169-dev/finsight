@@ -174,6 +174,14 @@ can be changed with `MONEYOS_GMAIL_STATEMENTS` and `MONEYOS_GMAIL_ALERTS`
 (Gmail search syntax). Password-protected e-statements go to
 `could not read\` as usual; alert emails do not have that problem.
 
+## Phone app (optional, Android)
+
+See [frontend/android/README.md](../frontend/android/README.md). In short:
+`moneyos serve --phone` (prints the https address), then in `frontend`:
+`$env:FINSIGHT_SERVER_URL = "https://<that address>"; npm run phone:prepare`,
+then build the APK in Android Studio. The phone's filter has JUnit tests
+(`.\gradlew test` in `frontend\android`).
+
 ## The assistant (optional)
 
 1. Install Ollama from https://ollama.com and start it.
