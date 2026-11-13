@@ -302,7 +302,7 @@ export function PaymentForm({ group, draft, onDone }: { group: MajraGroup; draft
           <FormActions pending={add.isPending} disabled={!amountOk || payer === receiver} label="Record payment" onCancel={onDone} />
         </>
       )}
-      <p className="text-xs text-muted">This only records a payment that already happened. MoneyOS never sends money.</p>
+      <p className="text-xs text-muted">This only records a payment that already happened. FinSight never sends money.</p>
     </form>
   );
 }

@@ -1,7 +1,7 @@
 {
   "name": "moneyos-web",
   "version": "0.9.0",
-  "description": "MoneyOS web app (React + TypeScript + Tailwind)",
+  "description": "FinSight web app (React + TypeScript + Tailwind)",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit -p . && vite build",

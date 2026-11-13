@@ -366,7 +366,7 @@ def summary(session: Session) -> list[MajraSummary]:
     """Your position across every group, per currency.
 
     Per-person amounts come from each group's suggested settlement: in a
-    shared group, who pays whom is a choice, and this is the plan MoneyOS
+    shared group, who pays whom is a choice, and this is the plan FinSight
     suggests.
     """
     you = me(session)

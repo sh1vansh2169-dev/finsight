@@ -25,7 +25,7 @@ export function SignIn() {
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <h1 className="mb-1 text-center text-3xl font-semibold text-primary-ink">MoneyOS</h1>
+        <h1 className="mb-1 text-center text-3xl font-semibold text-primary-ink">FinSight</h1>
         <p className="mb-6 text-center text-sm text-muted">Your money, in one calm place.</p>
         <Card>
           <h2 className="mb-4 text-lg font-semibold">{mode === "login" ? "Sign in" : "Create your account"}</h2>

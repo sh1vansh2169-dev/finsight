@@ -100,7 +100,7 @@ def ensure_data_mode(engine: Engine, mode: DataMode) -> None:
             session.add(AppMeta(key="data_mode", value=mode.value))
         elif stamp.value != mode.value:
             raise DataModeError(
-                f"{engine.url} holds {stamp.value} data but MoneyOS is running in "
+                f"{engine.url} holds {stamp.value} data but FinSight is running in "
                 f"{mode.value} mode; use a different database file"
             )
 

@@ -1,4 +1,4 @@
-"""Check that every money figure in an answer came from MoneyOS.
+"""Check that every money figure in an answer came from FinSight.
 
 Language models can misread, round oddly, add numbers up wrongly or invent
 them. So after the model answers, every money-like figure in the answer is

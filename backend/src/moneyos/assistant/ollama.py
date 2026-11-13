@@ -1,7 +1,7 @@
 """A minimal client for a local Ollama server (https://ollama.com), standard library only.
 
 Uses Ollama's chat endpoint with tool calling. Written against Ollama's
-documented API; tested in MoneyOS against a stand-in server, not a real model.
+documented API; tested in FinSight against a stand-in server, not a real model.
 """
 
 from __future__ import annotations

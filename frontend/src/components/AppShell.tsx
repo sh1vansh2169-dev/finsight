@@ -18,7 +18,7 @@ export function AppShell() {
   const health = useHealth();
   const location = useLocation();
 
-  if (me.isPending) return <div className="p-6"><Loading label="Opening MoneyOS" /></div>;
+  if (me.isPending) return <div className="p-6"><Loading label="Opening FinSight" /></div>;
   if (!me.data) return <Navigate to={`/sign-in?next=${encodeURIComponent(location.pathname)}`} replace />;
 
   return (
@@ -26,7 +26,7 @@ export function AppShell() {
       {health.data?.sample_data && <SampleBanner />}
       <div className="mx-auto flex max-w-6xl">
         <nav aria-label="Main" className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col gap-1 p-4 md:flex">
-          <p className="mb-6 px-3 text-lg font-semibold text-primary-ink">MoneyOS</p>
+          <p className="mb-6 px-3 text-lg font-semibold text-primary-ink">FinSight</p>
           {NAV.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === "/"}
               className={({ isActive }) =>

@@ -1,11 +1,16 @@
-# MoneyOS
+# FinSight
 
-A personal finance ledger that is honest about what it knows. MoneyOS imports
+A personal finance ledger that is honest about what it knows. FinSight imports
 bank and card statements, cleans and de-duplicates them, keeps a unified
 ledger with provenance for every value, and reports recorded totals. It is
 the foundation for later analytics, forecasting and ML work.
 
-> **Status: v0.8, early development.** Not production-ready and not
+> **Name.** The project was called MoneyOS until 2026-11-13. Inside the code it
+> still is: the Python package and command are `moneyos`, settings start with
+> `MONEYOS_`, and the default databases are `data/moneyos.db`. Only the name you
+> see changed.
+
+> **Status: v0.9, early development.** Not production-ready and not
 > security-reviewed. Use synthetic data unless you understand
 > [SECURITY.md](docs/SECURITY.md).
 
@@ -38,7 +43,7 @@ All of this is covered by automated tests (865 backend tests, many of them prope
 | API | FastAPI backend with OpenAPI docs at `/docs` |
 | Accounts and privacy | Sign-up, sign-in and sign-out; passwords hashed with scrypt; revocable sessions stored only as hashes; lockout after repeated failures; every user sees only their own data, enforced in the database layer; delete your account and all your data |
 | Data separation | Sample and real data live in separate, stamped databases that refuse to be mixed |
-| Assistant | Ask questions in plain words (Insights → Ask). A local model (Ollama) answers using read-only MoneyOS tools, so figures come from MoneyOS, not the model; every money figure in an answer is checked against those tools and any it cannot find is marked unverified; the tool results are shown. Data stays on your computer by default. Tested against a stand-in model only so far |
+| Assistant | Ask questions in plain words (Insights → Ask). A local model (Ollama) answers using read-only FinSight tools, so figures come from FinSight, not the model; every money figure in an answer is checked against those tools and any it cannot find is marked unverified; the tool results are shown. Data stays on your computer by default. Tested against a stand-in model only so far |
 | Web app | React + TypeScript + Tailwind, served by the backend: sign-in; Home (month figures, daily chart with uncovered days as gaps, 30-day outlook, budgets, Money Majra, recent transactions); Transactions (search, filters, category and type corrections, two-step statement import, possible-duplicate markers, duplicate review with undo, suggested categories to accept); Money Majra (add people and groups, shared expenses split equally or by exact amounts, percentages or shares, loans, repayments with a repeat-payment check, cancel an entry with a reason); Insights (suggestions, unusual payments you can mark as expected, spending by category, budgets, bills and income: upcoming payments, commitments, detected regular payments to confirm, and the what-if simulator); Profile (theme, sign out, delete account). Light and dark themes; phone and desktop layouts |
 
 ## Not built yet
@@ -100,7 +105,7 @@ frontend/       React + TypeScript + Tailwind web app (src/pages, src/components
 - [UI_UX.md](docs/UI_UX.md): design requirements for the Phase 8 app
 - [FINSIGHT_SPEC.md](docs/FINSIGHT_SPEC.md): the FinSight spec and how it was merged
 - [RESEARCH_NOTES.md](docs/RESEARCH_NOTES.md): the research question and plan
-- [INTEGRATIONS.md](docs/INTEGRATIONS.md): can MoneyOS connect to banks automatically? (Account Aggregator research)
+- [INTEGRATIONS.md](docs/INTEGRATIONS.md): can FinSight connect to banks automatically? (Account Aggregator research)
 
 ## Roadmap
 
@@ -120,6 +125,6 @@ frontend/       React + TypeScript + Tailwind web app (src/pages, src/components
 
 The FinSight specification was merged into this plan on 2026-11-11; see
 [docs/FINSIGHT_SPEC.md](docs/FINSIGHT_SPEC.md) for what was adopted, when, and
-what was kept from MoneyOS.
+what was kept from FinSight.
 
 All data in this repository is synthetic. Never commit real statements.

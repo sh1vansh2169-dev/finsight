@@ -96,7 +96,7 @@ class PayAppExport:
 
     Some payments also appear in the bank statement (true cross-source
     duplicates, listed in ``mirrored``); some were paid from an account
-    MoneyOS has not seen (``app_only``); some failed (``failed``).
+    FinSight has not seen (``app_only``); some failed (``failed``).
     """
 
     name: str
@@ -315,7 +315,7 @@ def _payapp(savings: list[_Entry], seed: int) -> PayAppExport:
         rows.append((app_day, _APP_NAMES[e.description], e.amount, "SUCCESS", ref))
         mirrored.append(MirroredPayment(ref, e.day, e.description, e.amount))
 
-    # Paid from an account MoneyOS has not seen: real money, no bank copy.
+    # Paid from an account FinSight has not seen: real money, no bank copy.
     # The 12 Feb one is a decoy: same day and amount as the bank's broadband
     # bill, but a different merchant. It must not be proposed as a duplicate.
     app_only = ((date(2026, 1, 18), "-340.00"), (date(2026, 2, 12), "-999.00"), (date(2026, 3, 14), "-410.00"))

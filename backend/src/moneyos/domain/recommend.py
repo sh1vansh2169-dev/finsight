@@ -99,7 +99,7 @@ def recommend(
             out.append(Recommendation(
                 "owed_to_you", 2, f"{o.person} owes you {o.amount:,.2f}",
                 f"{o.person} has owed you {o.amount:,.2f} {currency} since {o.since:%d %b %Y} ({days} days). "
-                "A friendly reminder might help; MoneyOS never contacts anyone for you.",
+                "A friendly reminder might help; FinSight never contacts anyone for you.",
                 {"amount": str(o.amount), "since": o.since.isoformat()}, "money_majra"))
 
     if reserve is not None and reserve > 0:

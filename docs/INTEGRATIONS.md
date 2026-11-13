@@ -1,15 +1,15 @@
 # Integrations research (Phase 9)
 
-Question: can MoneyOS fetch a user's transactions automatically instead of
+Question: can FinSight fetch a user's transactions automatically instead of
 asking them to download statements? Researched 2026-11-13. This is a
 research note, not legal advice; check the primary sources before relying on it.
 
-## What MoneyOS does today
+## What FinSight does today
 
 Statement files the user downloads from their own bank, card or payment
 app: CSV, Excel (.xlsx) and text-based PDF. The user stays in control of
 what is imported, every file goes through the same preview-then-commit
-step, and MoneyOS never holds a bank login. See
+step, and FinSight never holds a bank login. See
 [ARCHITECTURE.md](ARCHITECTURE.md#statement-formats).
 
 ## India's Account Aggregator (AA) framework
@@ -20,7 +20,7 @@ a **Financial Information Provider** (FIP: banks and other holders of your
 data) to a **Financial Information User** (FIU: the party that wants it),
 only with the customer's explicit, revocable consent.
 
-**Can MoneyOS be an FIU? No.** The RBI directions define a financial
+**Can FinSight be an FIU? No.** The RBI directions define a financial
 information user as an entity *registered with and regulated by a financial
 sector regulator* (the RBI, SEBI, IRDAI or PFRDA). A personal, open-source
 app run by an individual is none of these. Being an FIU means becoming (or
@@ -30,7 +30,7 @@ partnering with) a regulated institution, with the compliance that brings.
 consents, and the directions allow an AA to present information to the
 customer. Whether a given AA app lets you *export* that data in a usable
 file is up to each AA; it is not a standard feature we can build on. If one
-does, MoneyOS can import that file like any other statement.
+does, FinSight can import that file like any other statement.
 
 **Status of details I could not confirm from primary sources** (from
 secondary sources only, so treat as unverified):
@@ -43,7 +43,7 @@ secondary sources only, so treat as unverified):
   I did not confirm whether they replace the 2016 Master Direction. The FIU
   definition reads the same in both.
 
-## What MoneyOS will not do
+## What FinSight will not do
 
 These follow from the project rules in [SECURITY.md](SECURITY.md#rules-for-integrations-phase-9):
 
@@ -58,8 +58,8 @@ These follow from the project rules in [SECURITY.md](SECURITY.md#rules-for-integ
 
 ## Decision
 
-Keep file import as the way data enters MoneyOS. Revisit automatic fetching
-only if MoneyOS is ever run by a regulated entity, or if a provider offers an
+Keep file import as the way data enters FinSight. Revisit automatic fetching
+only if FinSight is ever run by a regulated entity, or if a provider offers an
 official, consent-based export to individuals.
 
 ## Sources

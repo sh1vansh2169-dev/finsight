@@ -1,4 +1,4 @@
-// Thin wrapper over fetch for the MoneyOS API.
+// Thin wrapper over fetch for the FinSight API.
 //
 // Authentication is an httpOnly cookie the page can never read. Every request
 // that changes data adds the X-MoneyOS-CSRF header, which another website

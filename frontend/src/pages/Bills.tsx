@@ -180,7 +180,7 @@ function CommitmentForm({ onDone }: { onDone: () => void }) {
         <Button type="submit" disabled={!name.trim() || minor === null || minor === 0n || add.isPending}>{add.isPending ? "Saving…" : "Add commitment"}</Button>
         <Button type="button" variant="quiet" onClick={onDone}>Cancel</Button>
       </div>
-      <p className="text-xs text-muted">Used for planning only. MoneyOS never pays anything.</p>
+      <p className="text-xs text-muted">Used for planning only. FinSight never pays anything.</p>
     </form>
   );
 }

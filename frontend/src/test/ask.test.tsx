@@ -33,7 +33,7 @@ describe("ask", () => {
     await user.click(screen.getByRole("button", { name: "Ask" }));
 
     expect(await screen.findByText(/In March you spent ₹23,875.56/)).toBeInTheDocument();
-    expect(screen.getByText(/Not found in your MoneyOS data: ₹70,000/)).toBeInTheDocument();
+    expect(screen.getByText(/Not found in your FinSight data: ₹70,000/)).toBeInTheDocument();
     expect(screen.getByText("Where the figures came from (Month overview)")).toBeInTheDocument();
     expect(screen.getByText(/"spending_after_refunds": "23875.56"/)).toBeInTheDocument();
     const sent = calls.find((c) => c.path === "/assistant/ask")!;
@@ -51,7 +51,7 @@ describe("ask", () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole("button", { name: "Who owes me money?" }));
     expect(await screen.findByText("Answer 1")).toBeInTheDocument();
-    expect(screen.getByText("No MoneyOS data was looked up for this answer.")).toBeInTheDocument();
+    expect(screen.getByText("No FinSight data was looked up for this answer.")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Your question"), "And Ravi?");
     await user.click(screen.getByRole("button", { name: "Ask" }));
     await waitFor(() => expect(calls.filter((c) => c.path === "/assistant/ask")).toHaveLength(2));

@@ -1,1 +1,1 @@
-"""The MoneyOS assistant: a local language model that answers from MoneyOS's own figures."""
+"""The FinSight assistant: a local language model that answers from FinSight's own figures."""

@@ -110,7 +110,7 @@ describe("money majra forms", () => {
     await user.click((await screen.findAllByRole("button", { name: "Record as paid" }))[0]!);
     expect(screen.getByLabelText("Who paid")).toHaveValue("2");
     expect(screen.getByLabelText("Amount")).toHaveValue("300.00");
-    expect(screen.getByText(/MoneyOS never sends money/)).toBeInTheDocument();
+    expect(screen.getByText(/FinSight never sends money/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Record payment" }));
 
     expect(await screen.findByText(/Is this a second, separate payment\?/)).toBeInTheDocument();

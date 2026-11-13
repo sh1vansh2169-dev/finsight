@@ -12,7 +12,7 @@ from moneyos.config import Settings
 def dist(tmp_path):
     folder = tmp_path / "dist"
     (folder / "assets").mkdir(parents=True)
-    (folder / "index.html").write_text("<!doctype html><title>MoneyOS</title>", encoding="utf-8")
+    (folder / "index.html").write_text("<!doctype html><title>FinSight</title>", encoding="utf-8")
     (folder / "assets" / "app.js").write_text("console.log(1)", encoding="utf-8")
     (tmp_path / "secret.txt").write_text("outside the app", encoding="utf-8")
     return folder
@@ -28,7 +28,7 @@ def client(database_url, dist):
 def test_serves_the_app_with_security_headers(client):
     for path in ("/", "/transactions", "/money-majra/groups/3"):  # client-side routes load the app
         page = client.get(path)
-        assert page.status_code == 200 and "<title>MoneyOS</title>" in page.text, path
+        assert page.status_code == 200 and "<title>FinSight</title>" in page.text, path
         assert "script-src 'self'" in page.headers["content-security-policy"]
         assert page.headers["x-frame-options"] == "DENY"
     asset = client.get("/assets/app.js")

@@ -26,7 +26,7 @@ interface Turn {
   reply?: AssistantAnswer;
 }
 
-/** Questions answered by a local model from MoneyOS's own figures. */
+/** Questions answered by a local model from FinSight's own figures. */
 export function Ask() {
   const status = useAssistantStatus();
   const ask = useAsk();
@@ -70,7 +70,7 @@ export function Ask() {
   return (
     <div className="flex flex-col gap-4">
       <Notice>
-        Answers come from your recorded data, looked up by MoneyOS. The assistant cannot change anything or move money,
+        Answers come from your recorded data, looked up by FinSight. The assistant cannot change anything or move money,
         and it can still word things badly: check figures marked unverified. Model: {status.data.model}, on this computer.
       </Notice>
 
@@ -109,7 +109,7 @@ function Reply({ reply }: { reply: AssistantAnswer }) {
       <p className="whitespace-pre-wrap">{reply.answer}</p>
       {reply.unverified_figures.length > 0 && (
         <div className="mt-3"><Notice tone="warn">
-          Not found in your MoneyOS data: {reply.unverified_figures.join(", ")}. The assistant may have worked these out
+          Not found in your FinSight data: {reply.unverified_figures.join(", ")}. The assistant may have worked these out
           itself or got them wrong; treat them as unverified.
         </Notice></div>
       )}
@@ -128,7 +128,7 @@ function Reply({ reply }: { reply: AssistantAnswer }) {
           </ul>
         </details>
       ) : (
-        <p className="mt-2 text-xs text-muted">No MoneyOS data was looked up for this answer.</p>
+        <p className="mt-2 text-xs text-muted">No FinSight data was looked up for this answer.</p>
       )}
     </div>
   );

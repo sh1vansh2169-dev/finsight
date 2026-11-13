@@ -32,7 +32,7 @@ export function Profile() {
         </Card>
       </div>
       <DeleteAccount />
-      <p className="mt-6 text-xs text-muted">MoneyOS {health.data?.version}{health.data?.sample_data ? " · sample data" : ""}</p>
+      <p className="mt-6 text-xs text-muted">FinSight {health.data?.version}{health.data?.sample_data ? " · sample data" : ""}</p>
     </>
   );
 }

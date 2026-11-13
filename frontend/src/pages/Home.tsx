@@ -16,7 +16,7 @@ export function Home() {
   if (!d.currency || !d.summary) {
     return (
       <>
-        <PageTitle title="Welcome to MoneyOS" />
+        <PageTitle title="Welcome to FinSight" />
         <EmptyState title="No transactions yet">
           Import a bank or card statement from <Link className="text-primary-ink underline" to="/transactions">Transactions</Link> to see your month here.
         </EmptyState>

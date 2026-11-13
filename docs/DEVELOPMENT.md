@@ -122,7 +122,7 @@ jsdom does not see files attached with `user.upload` when checking a
 1. Install Ollama from https://ollama.com and start it.
 2. Pull a model that supports tool calling: `ollama pull qwen2.5:7b`
    (the default; set `MONEYOS_ASSISTANT_MODEL` to use another).
-3. Start MoneyOS and open Insights → Ask.
+3. Start FinSight and open Insights → Ask.
 
 Tests never need a model: they use a scripted stand-in and a stand-in
 Ollama HTTP server (`tests/test_assistant.py`).
@@ -130,7 +130,7 @@ Ollama HTTP server (`tests/test_assistant.py`).
 ## Configuration
 
 See [.env.example](../.env.example). Set variables in the shell, e.g.
-`$env:MONEYOS_ALLOW_SIGNUP = "true"`. MoneyOS does not read `.env` files itself.
+`$env:MONEYOS_ALLOW_SIGNUP = "true"`. FinSight does not read `.env` files itself.
 `MONEYOS_FRONTEND_DIST` points the server at a different web-app build.
 
 ## Conventions

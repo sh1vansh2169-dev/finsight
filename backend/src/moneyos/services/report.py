@@ -31,7 +31,7 @@ def _table(header: list[str], rows: list[list[str]]) -> list[str]:
 def write_report(session: Session, out: Path, *, currency: str | None = None, sample: bool = False) -> Path:
     out.mkdir(parents=True, exist_ok=True)
     currency = analytics.resolve_currency(session, currency)
-    lines = ["# MoneyOS analytics report", ""]
+    lines = ["# FinSight analytics report", ""]
     if sample:
         lines += [f"> **{SAMPLE_MARKER}**", ""]
     lines += [f"Generated {date.today():%d %b %Y}. Recorded transactions only; these totals are not a bank balance.", ""]
@@ -116,7 +116,7 @@ def write_report(session: Session, out: Path, *, currency: str | None = None, sa
     lines += [
         "", "## What this report cannot tell you", "",
         "- Spending on days or accounts with no imported statement (shown as unknown, not zero).",
-        "- Cash or other payments never recorded in MoneyOS.",
+        "- Cash or other payments never recorded in FinSight.",
         "- Whether open duplicate pairs are double-counted until they are reviewed.",
         "- Anything about the future: these are descriptions of the past, not forecasts.",
     ]

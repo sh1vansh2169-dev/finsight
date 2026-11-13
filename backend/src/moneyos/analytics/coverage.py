@@ -1,7 +1,7 @@
 """Which dates each account's imported statements cover.
 
 A statement export proves what happened on an account over a period. Outside
-that period MoneyOS knows nothing about the account, and "no transactions"
+that period FinSight knows nothing about the account, and "no transactions"
 must not be read as "no spending". Coverage is estimated from each import as
 the span from its first to its last transaction date; the real statement
 period is usually a little longer, so coverage is slightly understated.

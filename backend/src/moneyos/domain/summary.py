@@ -1,6 +1,6 @@
 """Financial summaries over cleaned, de-duplicated transactions.
 
-These are *recorded* totals: they cover only the transactions MoneyOS has
+These are *recorded* totals: they cover only the transactions FinSight has
 seen and are not a bank balance.
 
 Definitions (all amounts are positive magnitudes unless noted):

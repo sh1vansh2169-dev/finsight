@@ -128,7 +128,7 @@ Random Forest 0.951 ± 0.004, XGBoost 0.945 ± 0.005, vocabulary rules
 - On *seen* merchants the models reach 0.95 and clearly beat the
   vocabulary rules (0.86): they learn individual merchants, including those
   whose names say nothing about their category. That is where a model adds
-  value in MoneyOS: learning the user's recurring merchants from their
+  value in FinSight: learning the user's recurring merchants from their
   corrections.
 - Against the app's current rules (written for different sample data) every
   model wins easily; that gap mostly measures how narrow those rules are.
@@ -275,7 +275,7 @@ separated by construction (the easy case). With no real types, clustering
 still returns tidy groups; only the low silhouette reveals they mean
 nothing.
 
-**Decision.** No clustering feature in the app: MoneyOS has one user, so
+**Decision.** No clustering feature in the app: FinSight has one user, so
 there is no population. If multi-user data ever exists, clusters must be
 reported with their silhouette and never shown as labels for people.
 

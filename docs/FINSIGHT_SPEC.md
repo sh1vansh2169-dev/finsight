@@ -8,7 +8,7 @@ Decisions taken when merging:
 
 | FinSight says | Decision |
 | --- | --- |
-| Name: FinSight | **Keep MoneyOS.** |
+| Name: FinSight | **Keep MoneyOS** (2026-11-11). **Changed 2026-11-13:** the visible name is now FinSight; internal identifiers stay `moneyos`. |
 | React + TypeScript + Tailwind frontend | **Adopted.** Replaces Flutter. The UI/UX requirements in UI_UX.md still apply. |
 | PostgreSQL, user accounts, JWT, password hashing, per-user isolation | **Adopted, timed with the frontend (Phase 8).** SQLite and single-user until then; the schema is already PostgreSQL-ready. PostgreSQL + Docker at deployment. |
 | Refunds reduce the original expense | **Adopted.** Implemented as category-level netting (see ARCHITECTURE.md). |

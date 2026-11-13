@@ -12,8 +12,8 @@ What is supported, and what deliberately is not:
   last saved; a formula never calculated by Excel reads as empty.
 * **PDF**: statements that contain text (not scans) and whose transactions
   are laid out as a table with recognisable column headings. Scanned
-  statements would need OCR, which MoneyOS does not do. Password-protected
-  PDFs are refused: MoneyOS does not ask for or handle statement passwords.
+  statements would need OCR, which FinSight does not do. Password-protected
+  PDFs are refused: FinSight does not ask for or handle statement passwords.
 * **.xls** (Excel 97-2003) is refused with a message to save as .xlsx or CSV.
 
 The file type is decided by the file's first bytes, never by its name.
@@ -331,7 +331,7 @@ def read_pdf(content: bytes) -> tuple[list[str], Iterator[tuple[int, dict[str, s
     except Exception as error:
         if _is_password_error(error):
             raise SchemaError(
-                "this PDF is password-protected. MoneyOS does not handle statement passwords: "
+                "this PDF is password-protected. FinSight does not handle statement passwords: "
                 "download the statement as CSV or Excel if your bank offers it"
             ) from None
         raise SchemaError(f"the PDF could not be read ({type(error).__name__})") from None
@@ -341,7 +341,7 @@ def read_pdf(content: bytes) -> tuple[list[str], Iterator[tuple[int, dict[str, s
             raise SchemaError(f"the PDF has more than {MAX_PDF_PAGES} pages; import a shorter period")
         if not any((page.extract_text() or "").strip() for page in pdf.pages):
             raise SchemaError(
-                "no text was found in this PDF; it looks like a scanned image, which MoneyOS cannot read"
+                "no text was found in this PDF; it looks like a scanned image, which FinSight cannot read"
             )
         # First: tables drawn with ruling lines. Then: tables laid out by spacing only.
         try:
@@ -353,7 +353,7 @@ def read_pdf(content: bytes) -> tuple[list[str], Iterator[tuple[int, dict[str, s
             header, rows = _layout_rows(pdf.pages)
         except SchemaError:
             raise SchemaError(
-                "no transaction table was found in this PDF. MoneyOS reads statements whose transactions "
+                "no transaction table was found in this PDF. FinSight reads statements whose transactions "
                 "are a table with headings such as Date, Description and Amount (or Debit/Credit)"
             ) from None
         return header, _records(header, _join_layout_wrapped(header, rows))

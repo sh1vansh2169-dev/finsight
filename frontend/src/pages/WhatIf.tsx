@@ -51,7 +51,7 @@ export function WhatIf() {
           <label className="flex min-w-40 flex-1 flex-col gap-1 text-sm font-medium">Money you have now (optional)
             <input inputMode="decimal" value={balanceText} onChange={(e) => setBalanceText(e.target.value)} placeholder="e.g. 45000"
               aria-invalid={balanceText !== "" && balance === null} className={`${fieldClass} tabular`} />
-            <span className="text-xs font-normal text-muted">MoneyOS doesn't know your bank balance; without this it shows the change only.</span>
+            <span className="text-xs font-normal text-muted">FinSight doesn't know your bank balance; without this it shows the change only.</span>
           </label>
         </div>
       </Card>

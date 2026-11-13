@@ -1,4 +1,4 @@
-"""Routes for the assistant: a local model that answers from MoneyOS's own figures."""
+"""Routes for the assistant: a local model that answers from FinSight's own figures."""
 
 from __future__ import annotations
 

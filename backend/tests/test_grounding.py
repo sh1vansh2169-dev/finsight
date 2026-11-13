@@ -1,4 +1,4 @@
-"""The grounding check: every money figure in an answer must come from MoneyOS."""
+"""The grounding check: every money figure in an answer must come from FinSight."""
 
 import pytest
 

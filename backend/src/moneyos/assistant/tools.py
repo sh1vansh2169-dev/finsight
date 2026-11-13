@@ -1,4 +1,4 @@
-"""The assistant's tools: read-only questions to MoneyOS itself.
+"""The assistant's tools: read-only questions to FinSight itself.
 
 Every figure the assistant may quote comes from one of these functions, which
 call the same API code the web app uses (so the numbers match the screens,
@@ -112,7 +112,7 @@ def spending_between(session: Session, settings: Settings, args: dict[str, Any])
         "start": start.isoformat(), "end": end.isoformat(), "warnings": out["warnings"],
         "by_currency": {c: {k: s[k] for k in ("income", "spending", "refunds", "net_cash_flow", "spending_by_category")}
                         for c, s in out["currencies"].items()},
-        "note": "Recorded totals for transactions in MoneyOS only; not a bank balance.",
+        "note": "Recorded totals for transactions in FinSight only; not a bank balance.",
     }
 
 

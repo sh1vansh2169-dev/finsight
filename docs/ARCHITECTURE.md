@@ -69,7 +69,7 @@ file name, so two exports of the same account under different names are not
 de-duplicated against each other unless the account is specified.
 
 ### Near-duplicates go to a review queue, never auto-merged
-**Problem.** The same payment often reaches MoneyOS twice with different
+**Problem.** The same payment often reaches FinSight twice with different
 details: a payment app's export and the bank statement of the linked
 account ("Spice Route" on the 9th vs "UPI/SPICE ROUTE RESTAURANT/4471" on
 the 10th), or a cash entry later seen on a statement. Exact rules cannot
@@ -216,7 +216,7 @@ no CORS, and the session cookie never leaves the site.
 A local language model answers questions, but never supplies figures:
 
 ```
-question ─► model ─► tool call(s) ─► read-only MoneyOS functions ─► results ─► model ─► answer
+question ─► model ─► tool call(s) ─► read-only FinSight functions ─► results ─► model ─► answer
                                                                      │                    │
                                                                      └──► grounding check ◄┘
 ```

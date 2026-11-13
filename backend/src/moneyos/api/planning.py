@@ -153,7 +153,7 @@ class SimulateIn(_In):
     horizon_days: int = Field(default=30, ge=7, le=90)
     starting_balance: Decimal | None = Field(
         default=None, max_digits=15, decimal_places=2,
-        description="Your current balance, if you want a projected balance. MoneyOS does not know it otherwise.",
+        description="Your current balance, if you want a projected balance. FinSight does not know it otherwise.",
     )
     as_of: date | None = Field(default=None, description="Defaults to the date of your newest transaction.")
     currency: str | None = Field(default=None, pattern=r"^[A-Za-z]{3}$")

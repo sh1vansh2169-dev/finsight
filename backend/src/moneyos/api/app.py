@@ -42,7 +42,7 @@ _ERROR_STATUS = {
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
     app = FastAPI(
-        title="MoneyOS API",
+        title="FinSight API",
         version=__version__,
         description="Local personal-finance ledger. Totals are recorded totals, not bank balances.",
     )

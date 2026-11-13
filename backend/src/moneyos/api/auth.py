@@ -69,7 +69,7 @@ def register(body: Credentials, request: Request, response: Response, session: S
              settings: Annotated[Settings, Depends(get_settings)]):
     """Create an account. The first account can always be created; later ones only if sign-up is allowed."""
     if auth.user_count(session) and not settings.allow_signup:
-        raise ConflictError("sign-up is closed on this MoneyOS; ask its owner to set MONEYOS_ALLOW_SIGNUP=true")
+        raise ConflictError("sign-up is closed on this FinSight; ask its owner to set MONEYOS_ALLOW_SIGNUP=true")
     auth.create_user(session, body.email, body.password)
     user, token = auth.sign_in(session, body.email, body.password)
     return _signed_in(user, token, body.use_cookie, request, response)

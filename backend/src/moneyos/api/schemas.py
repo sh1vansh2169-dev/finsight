@@ -15,7 +15,7 @@ from moneyos.db.tables import Account, ImportBatch, ImportRow, MatchCandidate, T
 from moneyos.domain.models import Basis, Direction, Status, TxnType
 from moneyos.services.mapping import signed_amount
 
-RECORDED_TOTALS_NOTE = "Recorded totals for transactions in MoneyOS only; not a bank balance."
+RECORDED_TOTALS_NOTE = "Recorded totals for transactions in FinSight only; not a bank balance."
 
 
 class _Out(BaseModel):

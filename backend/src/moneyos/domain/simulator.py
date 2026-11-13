@@ -12,7 +12,7 @@ A projection of the next H days combines:
 
 Money owed *to* you is never part of the estimate: it is reported
 separately as "if repaid". Money you owe is reported as "if you repay".
-A balance is projected only from a balance the user states; MoneyOS never
+A balance is projected only from a balance the user states; FinSight never
 claims to know one. Everything is recalculated from inputs, so the same
 inputs always give the same answer.
 """
@@ -172,7 +172,7 @@ def project(inputs: Inputs) -> Projection:
     if sb is None:
         assumptions.append("No current balance was given, so only the change over the period is shown.")
     else:
-        assumptions.append("The starting balance is the one you entered; MoneyOS does not know your bank balance.")
+        assumptions.append("The starting balance is the one you entered; FinSight does not know your bank balance.")
 
     return Projection(
         start=inputs.start, end=inputs.end, currency=inputs.currency,

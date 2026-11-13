@@ -20,7 +20,7 @@ from moneyos.domain.pipeline import run_pipeline
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="moneyos", description="MoneyOS personal finance toolkit")
+    parser = argparse.ArgumentParser(prog="moneyos", description="FinSight personal finance toolkit")
     commands = parser.add_subparsers(dest="command", required=True)
 
     imp = commands.add_parser("import", help="analyse statement CSV files without saving anything")
@@ -326,7 +326,7 @@ def _cmd_serve(args) -> int:
     settings = Settings.from_env(data_mode=DataMode.SAMPLE if args.sample else None)
     if not _is_loopback(args.host) and not args.allow_network:
         print(
-            "error: refusing to listen on a non-local address. MoneyOS speaks plain HTTP, so passwords would "
+            "error: refusing to listen on a non-local address. FinSight speaks plain HTTP, so passwords would "
             "cross the network unencrypted. Put it behind a TLS proxy, then pass --allow-network.",
             file=sys.stderr,
         )
@@ -337,7 +337,7 @@ def _cmd_serve(args) -> int:
         print(f"error: {error}", file=sys.stderr)
         return 2
     label = "SAMPLE DATA" if settings.data_mode == DataMode.SAMPLE else "real data"
-    print(f"MoneyOS API ({label}) on http://{args.host}:{args.port}  docs: /docs")
+    print(f"FinSight API ({label}) on http://{args.host}:{args.port}  docs: /docs")
     # access_log is off: URLs can carry filter values such as merchant names.
     uvicorn.run(app, host=args.host, port=args.port, access_log=False)
     return 0

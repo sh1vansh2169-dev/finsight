@@ -78,9 +78,9 @@ def test_answers_from_tools_and_flags_invented_figures(app_client):
     assert body["tool_calls"][0]["name"] == "month_overview"
     overview = body["tool_calls"][0]["result"]
     assert overview["income"] == "85000.00" and overview["spending_after_refunds"] == "23875.56"
-    # The odd ₹120 row has no recognised type, so MoneyOS leaves it out of spending and says so.
+    # The odd ₹120 row has no recognised type, so FinSight leaves it out of spending and says so.
     assert any("unknown type" in w for w in overview["warnings"])
-    # 85,000 and 23,995.56 come from MoneyOS; "about ₹70,000" was made up by the model.
+    # 85,000 and 23,995.56 come from FinSight; "about ₹70,000" was made up by the model.
     assert body["unverified_figures"] == ["₹70,000"]
     # The model was told the figures came as data, and given only read-only tools.
     system = model.received[0][0]["content"]

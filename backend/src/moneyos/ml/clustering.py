@@ -1,6 +1,6 @@
 """Spending-behaviour clustering: a research check, not a product feature.
 
-MoneyOS has one user, so there is no population to cluster. This asks two
+FinSight has one user, so there is no population to cluster. This asks two
 questions on simulated people:
 
 1. When people really do come in a few spending types (archetypes), can
