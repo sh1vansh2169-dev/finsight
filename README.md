@@ -110,8 +110,8 @@ frontend/       React + TypeScript + Tailwind web app (src/pages, src/components
 | 3 | Normalisation, deduplication, ledger | **Done**: exact dedupe, near-duplicate review queue, audit trail. Open: transfer pairing between your own accounts, reversal pairing |
 | 4 | Dashboard and descriptive analytics (Pandas) | **Done** (data and API; the screens themselves are Phase 8) |
 | 5 | Money Majra: lending, borrowing, shared expenses, repayments, settlements | **Done** (API; screens are Phase 8) |
-| 6 | ML and forecasting: categorisation, forecasting, anomaly detection, clustering, each against baselines | **Done on synthetic data** (experiments E1–E4). Shipped: category suggestions, unusual-payment flags. Not shipped: forecasting (no model beat the baselines), clustering. Next: research Models B–D |
-| 7 | Recurring payment detection, commitments, what-if simulator, rule-based recommendations | **Done** (API; screens are Phase 8). Research Models B–D are the next experiment |
+| 6 | ML and forecasting: categorisation, forecasting, anomaly detection, clustering, each against baselines | **Done on synthetic data** (experiments E1–E4). Shipped: category suggestions, unusual-payment flags. Not shipped: forecasting (no model beat the baselines), clustering. Research Model B (E5): recorded bills cut 7-day forecast error ~30% in simulation, no gain at 30 days. Next: Models C–D |
+| 7 | Recurring payment detection, commitments, what-if simulator, rule-based recommendations | **Done**, with screens (Phase 8). The simulator forecasts as research Model B does |
 | 8 | Web app: React + TypeScript + Tailwind; user accounts, login, per-user data isolation | **Done**: accounts and isolation (8a); the web app with every module's screens (8b) |
 | 9 | More sources: Excel and supported PDF statements; authorised integrations research (Account Aggregator) | **Done**: Excel and text-PDF import; research concluded that Account Aggregator access needs a regulated entity, so file import stays ([INTEGRATIONS.md](docs/INTEGRATIONS.md)) |
 | 10 | LLM assistant with tool calling, answers grounded in backend calculations | Not started |
