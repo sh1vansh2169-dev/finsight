@@ -405,6 +405,17 @@ checks and preview as any statement. Known limits: banks change their
 wording; an unrecognised alert is shown as unreadable or, with no money
 words at all, not picked up.
 
+### Gmail (`gmail.py`)
+
+Feeds the statement inbox; it never writes to the database itself. OAuth
+for installed apps with a loopback redirect on `127.0.0.1` and PKCE, scope
+`gmail.readonly` only, standard library HTTP. Statement attachments (CSV,
+Excel, PDF, at most 5 MB) are saved under a subfolder named after the
+sender (which becomes the account); alert emails are read by the SMS
+alert rules (`domain/sms.py`, `source="Email"`) and written to one CSV. Ids
+of handled emails are kept in `data/gmail/seen.json`, the refresh token in
+`data/gmail/token.json`; both are git-ignored.
+
 ### Statement inbox (`services/inbox.py`)
 
 A background thread scans the inbox folder every 5 seconds. A file is read

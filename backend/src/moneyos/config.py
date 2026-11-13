@@ -42,6 +42,9 @@ class Settings:
     watch_dir: Path | None = None
     # Whose ledger the inbox fills; may be left empty when there is only one account.
     watch_user: str | None = None
+    # Fetch statements and alert emails from Gmail into the inbox every 30 minutes (needs `moneyos gmail connect`).
+    gmail_fetch: bool = False
+    gmail_dir: Path = Path("data/gmail")
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None, **overrides) -> Settings:
@@ -61,6 +64,7 @@ class Settings:
             "assistant_allow_remote": (env.get("MONEYOS_ASSISTANT_ALLOW_REMOTE") or "").lower() in ("1", "true", "yes"),
             "watch_dir": Path(env["MONEYOS_WATCH_DIR"]) if env.get("MONEYOS_WATCH_DIR") else None,
             "watch_user": env.get("MONEYOS_WATCH_USER") or None,
+            "gmail_fetch": (env.get("MONEYOS_GMAIL_FETCH") or "").lower() in ("1", "true", "yes"),
         }
         values.update({k: v for k, v in overrides.items() if v is not None})
         return cls(**values)

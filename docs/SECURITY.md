@@ -23,6 +23,7 @@ store real financial data in it on a shared machine.**
 | Input validation | Pydantic models with length, pattern and precision limits; unknown fields rejected; CSV values validated per row |
 | Upload limits | 5 MB per file; only the base name of the uploaded file name is kept. Excel and PDF: at most 20,000 rows and 100 pages, 50 MB unpacked for an .xlsx, XML parsed with `defusedxml`. The file type is read from the content, never from the name |
 | SMS backups | Parsed with `defusedxml`; up to 50 MB. Only transaction alerts are kept (sender, timestamp and the alert text, for traceability); OTPs and all other messages are discarded while reading and never stored |
+| Gmail | Read-only scope (`gmail.readonly`); OAuth with PKCE and a state check; the sign-in reply is received only on `127.0.0.1`. Uses the user's own Google Cloud client. The refresh token is stored in `data/gmail/token.json` (git-ignored); `moneyos gmail disconnect` deletes it, and access can be revoked at https://myaccount.google.com/permissions. Attachment names are sanitised before saving |
 | Statement passwords | Password-protected PDFs are refused; FinSight never asks for or stores a statement password |
 | Safe database access | SQLAlchemy ORM and bound parameters only; no SQL built from user input |
 | No secrets in code | Configuration via environment variables; `.env` files are git-ignored; `.env.example` holds no values |
@@ -71,6 +72,10 @@ Only someone with access to your machine can do this.
   reaches the model, and a description written to manipulate it could make
   an answer wrong (the tools are read-only, so it cannot do more). Figures it
   invents are flagged by the grounding check, but wording is not checked.
+- **The Gmail token is a plain file.** Anyone who can read your user
+  folder can use it to read your mail until it expires or is revoked. Google
+  grants read access to the whole mailbox; FinSight only searches for bank
+  emails, but that is its choice, not a limit Google enforces.
 - **PDF parsing is complex.** `pdfminer` (via `pdfplumber`) parses
   untrusted PDFs in the server process. The limits above bound the work,
   but a parser bug could still be triggered by a crafted file; the server

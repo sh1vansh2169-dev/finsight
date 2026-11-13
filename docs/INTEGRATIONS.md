@@ -20,6 +20,10 @@ statement, whichever app made them.
 On Android, bank and UPI alert SMS can be imported from an SMS backup
 file, with no access to the phone or any account (see ARCHITECTURE.md).
 
+Bank statement and alert emails can be fetched from Gmail with the
+user's own read-only Google sign-in (see DEVELOPMENT.md). This uses
+Google's official API and consent screen, not the bank's systems.
+
 ## India's Account Aggregator (AA) framework
 
 The authorised way to share financial data between institutions in India.

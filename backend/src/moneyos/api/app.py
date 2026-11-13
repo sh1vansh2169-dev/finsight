@@ -41,6 +41,37 @@ _ERROR_STATUS = {
 }
 
 
+def _start_gmail_fetcher(settings: Settings, every_seconds: float = 30 * 60):
+    """Fetch from Gmail into the inbox now and then every 30 minutes; returns an event that stops it."""
+    import logging
+    import os
+    import threading
+
+    from moneyos import gmail
+
+    log = logging.getLogger("moneyos.gmail")
+    stop = threading.Event()
+
+    def run():
+        while not stop.is_set():
+            try:
+                result = gmail.fetch(
+                    gmail.Gmail(settings.gmail_dir / "token.json"), settings.watch_dir, settings.gmail_dir / "seen.json",
+                    statement_query=os.environ.get("MONEYOS_GMAIL_STATEMENTS") or gmail.STATEMENT_QUERY,
+                    alert_query=os.environ.get("MONEYOS_GMAIL_ALERTS") or gmail.ALERT_QUERY)
+                if result.statements or result.alerts:
+                    log.info("gmail: %d statement file(s), %d alert(s) saved to the inbox",
+                             len(result.statements), result.alerts)
+            except gmail.GmailError as error:
+                log.warning("gmail: %s", error)
+            except Exception:
+                log.exception("gmail: fetch failed")
+            stop.wait(every_seconds)
+
+    threading.Thread(target=run, name="finsight-gmail", daemon=True).start()
+    return stop
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
 
@@ -54,7 +85,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                                          user_email=settings.watch_user))
             watcher.start()
         app.state.inbox_watcher = watcher
+        stop_gmail = None
+        if settings.gmail_fetch and settings.watch_dir is not None:
+            stop_gmail = _start_gmail_fetcher(settings)
         yield
+        if stop_gmail is not None:
+            stop_gmail.set()
         if watcher is not None:
             watcher.stop()
 

@@ -144,6 +144,36 @@ the file itself stays wherever you put it (`done\` after the inbox reads
 it): delete it once imported if you do not want a copy of your messages
 on the computer.
 
+## Gmail (optional)
+
+One-time setup in Google Cloud (free; your own project and key):
+
+1. Go to https://console.cloud.google.com and create a project (any name).
+2. *APIs & Services → Library*: enable **Gmail API**.
+3. *APIs & Services → OAuth consent screen* (Google Auth Platform): user type
+   **External**, app name "FinSight", your email as support and developer
+   contact. Under *Audience / Test users*, add your own Gmail address. Leave
+   the app in **Testing**: only test users can sign in.
+4. *Credentials → Create credentials → OAuth client ID*, application type
+   **Desktop app**. Download the JSON file into `data\` (never committed),
+   for example `data\gmail-client.json`.
+
+Then:
+
+```powershell
+.\.venv\Scripts\moneyos.exe gmail connect --client data\gmail-client.json   # approve read-only access
+.\.venv\Scripts\moneyos.exe gmail fetch --inbox "$env:USERPROFILE\Downloads\FinSight"
+.\.venv\Scripts\moneyos.exe serve --watch "$env:USERPROFILE\Downloads\FinSight" --gmail     # or: every 30 minutes
+.\.venv\Scripts\moneyos.exe gmail disconnect                                  # forget it on this computer
+```
+
+Google may say the app is "not verified": that is expected for your own
+app in Testing mode. In Testing mode Google expires the sign-in after
+about 7 days; run `gmail connect` again when fetching says so. The searches
+can be changed with `MONEYOS_GMAIL_STATEMENTS` and `MONEYOS_GMAIL_ALERTS`
+(Gmail search syntax). Password-protected e-statements go to
+`could not read\` as usual; alert emails do not have that problem.
+
 ## The assistant (optional)
 
 1. Install Ollama from https://ollama.com and start it.

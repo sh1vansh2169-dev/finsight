@@ -51,6 +51,14 @@ def _build_parser() -> argparse.ArgumentParser:
     user.add_argument("--sample", action="store_true", help="the synthetic sample database")
     user.add_argument("--password-stdin", action="store_true", help="read the password from standard input")
 
+    gm = commands.add_parser("gmail", help="bring bank statements and alert emails from Gmail (read-only)")
+    gm_cmd = gm.add_subparsers(dest="gmail_command", required=True)
+    gm_connect = gm_cmd.add_parser("connect", help="one-time read-only sign-in with Google in your browser")
+    gm_connect.add_argument("--client", required=True, help='OAuth client file ("Desktop app") from Google Cloud')
+    gm_fetch = gm_cmd.add_parser("fetch", help="save new statements and alerts into the statement inbox")
+    gm_fetch.add_argument("--inbox", help="the statement inbox folder (default: MONEYOS_WATCH_DIR)")
+    gm_cmd.add_parser("disconnect", help="forget the Gmail sign-in on this computer")
+
     ml = commands.add_parser("ml", help="run a machine-learning experiment")
     ml.add_argument("experiment", choices=["categorization", "forecasting", "anomaly", "clustering", "bills"])
     ml.add_argument("--out", help="results folder (default: data/experiments/<experiment>)")
@@ -62,6 +70,8 @@ def _build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--sample", action="store_true", help="serve the synthetic sample database")
     serve.add_argument("--watch", metavar="FOLDER",
                        help="statement inbox: statements saved in FOLDER are picked up for review")
+    serve.add_argument("--gmail", action="store_true",
+                       help="with --watch: fetch statements and alert emails from Gmail every 30 minutes")
     serve.add_argument("--allow-network", action="store_true",
                        help="listen on a non-local address (plain HTTP: put it behind TLS first)")
     return parser
@@ -319,6 +329,45 @@ def _cmd_user(args) -> int:
         factory.kw["bind"].dispose()
 
 
+def _cmd_gmail(args) -> int:
+    import os
+
+    from moneyos import gmail
+
+    settings = Settings.from_env()
+    token = settings.gmail_dir / "token.json"
+    try:
+        if args.gmail_command == "connect":
+            client = gmail.load_client(Path(args.client))
+            print("Opening Google sign-in in your browser. FinSight asks for read-only access to Gmail.")
+            gmail.connect(client, token)
+            print(f"Connected. The sign-in is kept in {token} (never committed). "
+                  "`moneyos gmail disconnect` forgets it.")
+            return 0
+        if args.gmail_command == "disconnect":
+            removed = gmail.disconnect(token)
+            print("Forgotten on this computer." if removed else "Gmail was not connected.")
+            print("To remove FinSight's access in Google too: https://myaccount.google.com/permissions")
+            return 0
+        inbox = Path(args.inbox) if args.inbox else settings.watch_dir
+        if inbox is None:
+            print("error: give --inbox FOLDER or set MONEYOS_WATCH_DIR", file=sys.stderr)
+            return 2
+        result = gmail.fetch(gmail.Gmail(token), inbox, settings.gmail_dir / "seen.json",
+                             statement_query=os.environ.get("MONEYOS_GMAIL_STATEMENTS") or gmail.STATEMENT_QUERY,
+                             alert_query=os.environ.get("MONEYOS_GMAIL_ALERTS") or gmail.ALERT_QUERY)
+    except gmail.GmailError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    for name in result.statements:
+        print(f"statement: {name}")
+    if result.alerts:
+        print(f"alerts: {result.alerts} in {result.alerts_file}")
+    print(f"Saved to {inbox}; {result.skipped} email(s) already handled or without a transaction. "
+          "Review them in the app under Transactions.")
+    return 0
+
+
 def _cmd_serve(args) -> int:
     import uvicorn
 
@@ -326,7 +375,11 @@ def _cmd_serve(args) -> int:
     from moneyos.db.session import DataModeError
 
     settings = Settings.from_env(data_mode=DataMode.SAMPLE if args.sample else None,
-                                 watch_dir=Path(args.watch) if args.watch else None)
+                                 watch_dir=Path(args.watch) if args.watch else None,
+                                 gmail_fetch=True if args.gmail else None)
+    if args.gmail and not settings.watch_dir:
+        print("error: --gmail needs --watch FOLDER (Gmail items go into the statement inbox)", file=sys.stderr)
+        return 2
     if not _is_loopback(args.host) and not args.allow_network:
         print(
             "error: refusing to listen on a non-local address. FinSight speaks plain HTTP, so passwords would "
@@ -366,6 +419,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_report(args)
     if args.command == "user":
         return _cmd_user(args)
+    if args.command == "gmail":
+        return _cmd_gmail(args)
     if args.command == "ml":
         from moneyos.ml import experiments
 

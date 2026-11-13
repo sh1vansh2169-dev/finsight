@@ -102,7 +102,7 @@ def _who(body: str) -> str | None:
     return None
 
 
-def read_alert(sender: str, timestamp_ms: int, body: str) -> dict[str, str] | None:
+def read_alert(sender: str, timestamp_ms: int, body: str, *, source: str = "SMS") -> dict[str, str] | None:
     """One message as a row, or None if it is not a transaction alert (it is then forgotten)."""
     text = " ".join(body.split())
     direction = _DIRECTION.search(text)
@@ -120,7 +120,7 @@ def read_alert(sender: str, timestamp_ms: int, body: str) -> dict[str, str] | No
     debit = direction.group("debit") is not None
     return {
         "Date": when.isoformat(),
-        "Description": _who(text) or f"SMS alert from {sender}",
+        "Description": _who(text) or f"{source} alert from {sender}",
         "Amount": "" if amount is None else (f"-{amount}" if debit else amount),
         "Account": f"{sender} XX{account.group(1)}" if account else sender,
         "Reference": reference.group(1) if reference else "",
