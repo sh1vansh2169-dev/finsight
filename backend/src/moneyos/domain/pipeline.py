@@ -12,7 +12,8 @@ from pathlib import Path
 
 from moneyos.domain.classify import Rules, classify, load_rules
 from moneyos.domain.dedupe import deduplicate
-from moneyos.domain.importer import FileImport, import_csv
+from moneyos.domain.importer import FileImport
+from moneyos.domain.statements import import_bytes
 from moneyos.domain.matching import MatchScore, find_candidates
 from moneyos.domain.models import RejectedRow, Transaction
 from moneyos.domain.summary import LedgerSummary, summarize_by_currency
@@ -39,10 +40,11 @@ def run_pipeline(
     existing: Iterable[Transaction] = (),
     rules: Rules | None = None,
 ) -> PipelineResult:
-    """Import the given CSV files in order and return the combined result."""
+    """Import the given CSV, Excel or PDF statements in order and return the combined result."""
     rules = rules or load_rules()
     files = [
-        import_csv(p, account=account, default_currency=default_currency, day_first=day_first)
+        import_bytes(Path(p).read_bytes(), Path(p).name, account=account, default_currency=default_currency,
+                     day_first=day_first)
         for p in paths
     ]
     for imported in files:

@@ -56,7 +56,7 @@ def _load_sample(client, dataset):
 
 def test_health(client, make_client, tmp_path):
     assert client.get("/health").json() == {
-        "status": "ok", "version": "0.8.0", "data_mode": "real", "sample_data": False,
+        "status": "ok", "version": "0.9.0", "data_mode": "real", "sample_data": False,
     }
     sample = make_client(
         data_mode=DataMode.SAMPLE, database_url=f"sqlite:///{(tmp_path / 's.db').as_posix()}"
@@ -83,7 +83,7 @@ def test_preview_then_commit(client):
     item = page["items"][0]
     assert item["amount"] == "-120.00"  # money is a string, never a float
     assert (item["direction"], item["txn_type"], item["type_basis"]) == ("debit", "expense", "rule")
-    assert (item["account"], item["source"], item["import_batch_id"]) == ("Wallet", "csv_import", batch_id)
+    assert (item["account"], item["source"], item["import_batch_id"]) == ("Wallet", "file_import", batch_id)
 
     history = client.get("/api/v1/imports").json()
     assert [b["id"] for b in history] == [batch_id]

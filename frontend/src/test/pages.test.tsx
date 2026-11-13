@@ -138,7 +138,7 @@ describe("transactions", () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole("button", { name: /Import statement/ }));
     const file = new File(["date,description,amount\n"], "october.csv", { type: "text/csv" });
-    await user.upload(screen.getByLabelText(/CSV file/), file);
+    await user.upload(screen.getByLabelText(/Statement file/), file);
     // jsdom's "required" check can't see files attached by user.upload, so it blocks
     // the click silently; submit the form directly (a real browser submits normally).
     fireEvent.submit(screen.getByRole("button", { name: "Preview" }).closest("form")!);

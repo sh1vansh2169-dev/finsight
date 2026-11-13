@@ -333,6 +333,33 @@ time*, inside one database transaction, because another import may have
 been committed after the preview. Rejected rows keep their raw cells for the
 error report; nothing is silently dropped.
 
+### Statement formats
+
+`domain/statements.py` turns every supported file into a header plus rows of
+cell text and hands them to `importer.import_records`, the same code path a
+CSV takes. So validation, rejection reasons, duplicate checks and the
+preview step are identical for every format, and one test imports the same
+synthetic statement as CSV, Excel and PDF and requires identical results.
+
+- **Detection by content**: `%PDF-` is a PDF, a zip signature is an .xlsx,
+  the old Excel signature is refused with a message, anything else is CSV.
+  A file's name is never trusted.
+- **Excel**: first sheet, header found in the first 30 rows. Numbers arrive
+  from Excel as binary floats; `repr()` gives the shortest decimal that reads
+  back as the same float, which is exactly what was typed for any amount
+  with up to 15 significant digits, so `0.10` stays `0.10`.
+- **PDF, ruled tables**: `pdfplumber` table extraction.
+- **PDF, tables without lines** (common in bank statements): words are
+  grouped into lines; the header line's phrases define the columns, with
+  boundaries halfway between neighbouring headings; each word goes to the
+  column containing its centre. A line with only a description is joined
+  to the transaction above *only if it sits directly under it*, so a footer
+  further down the page becomes a visible rejected row instead of being
+  glued onto a description. Lines above each page's repeated header are skipped.
+- **Limits** for hostile files: 5 MB upload, 100 PDF pages, 20,000 rows,
+  50 MB unpacked for an .xlsx (a "zip bomb" check before parsing), and
+  `defusedxml` for the workbook's XML.
+
 ### Sample and real data never mix
 Each database is stamped (`app_meta.data_mode`) the first time it is opened.
 A sample database cannot be opened in real mode or the reverse, and a

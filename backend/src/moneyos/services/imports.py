@@ -9,7 +9,6 @@ import may have been committed in between) inside one database transaction.
 from __future__ import annotations
 
 import hashlib
-import io
 from dataclasses import dataclass
 from pathlib import PurePath
 
@@ -19,7 +18,8 @@ from sqlalchemy.orm import Session, selectinload
 from moneyos.db.tables import Account, AuditEvent, ImportBatch, ImportRow, TransactionRecord, utc_now
 from moneyos.domain.classify import Rules, classify
 from moneyos.domain.dedupe import deduplicate
-from moneyos.domain.importer import MAX_IMPORT_BYTES, decode_bytes, import_text
+from moneyos.domain.importer import MAX_IMPORT_BYTES
+from moneyos.domain.statements import import_bytes
 from moneyos.domain.models import Transaction
 from moneyos.services import review
 from moneyos.services.errors import ConflictError, NotFoundError, PayloadTooLargeError
@@ -94,8 +94,8 @@ def preview_import(
     # Keep only the base name of whatever the client sent.
     filename = PurePath(filename.replace("\\", "/")).name[:255] or "upload.csv"
 
-    imported = import_text(
-        io.StringIO(decode_bytes(content), newline=""),
+    imported = import_bytes(
+        content,
         filename,
         account=options.account,
         default_currency=options.default_currency,
@@ -171,7 +171,7 @@ def commit_import(session: Session, batch_id: int) -> ImportBatch:
             continue
         if t.account not in accounts:
             accounts[t.account] = get_or_create_account(session, t.account, t.currency)
-        session.add(to_record(t, accounts[t.account], source="csv_import", import_batch_id=batch.id))
+        session.add(to_record(t, accounts[t.account], source="file_import", import_batch_id=batch.id))
         inserted += 1
 
     session.flush()

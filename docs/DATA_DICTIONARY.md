@@ -35,7 +35,7 @@ debits; `income`, `refund`, `borrowed`, `repayment_received` are credits;
 | `category`, `category_basis` | text(100), basis | `Uncategorized` when unknown |
 | `status` | enum | |
 | `external_id` | text(100), nullable | Bank reference / transaction ID. Unique per account when present |
-| `source` | `csv_import` / `manual` | |
+| `source` | `file_import` / `manual` | Rows imported before v0.9 say `csv_import`; same meaning (imported from a statement file) |
 | `import_batch_id` | int → `import_batches.id`, nullable | Provenance |
 | `source_file`, `source_row` | nullable | Provenance: file name and 1-based line number |
 | `duplicate_of_id` | int → `transactions.id`, nullable | Set when the user confirms this record is the same payment as another. Such records are kept for provenance but hidden from listings (unless `include_duplicates=true`) and always excluded from totals |

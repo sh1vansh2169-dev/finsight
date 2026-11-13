@@ -197,7 +197,7 @@ class TransactionRecord(Owned, Base):
     category_basis: Mapped[str] = mapped_column(String(8))
     status: Mapped[str] = mapped_column(String(10))
     external_id: Mapped[str | None] = mapped_column(String(100))
-    source: Mapped[str] = mapped_column(String(20))  # csv_import | manual
+    source: Mapped[str] = mapped_column(String(20))  # file_import (csv_import before v0.9) | manual
     import_batch_id: Mapped[int | None] = mapped_column(ForeignKey("import_batches.id"))
     source_file: Mapped[str | None] = mapped_column(String(255))
     source_row: Mapped[int | None] = mapped_column(Integer)

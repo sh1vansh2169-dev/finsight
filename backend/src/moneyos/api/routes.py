@@ -65,12 +65,12 @@ def _detail(session: Session, batch) -> ImportDetailOut:
 async def preview_import(
     session: SessionDep,
     rules: RulesDep,
-    file: Annotated[UploadFile, File(description="Statement CSV")],
+    file: Annotated[UploadFile, File(description="Statement: CSV, Excel .xlsx or text PDF")],
     account: Annotated[str | None, Form(max_length=100)] = None,
     currency: Annotated[str, Form(pattern=r"^[A-Za-z]{3}$")] = "INR",
     day_first: Annotated[bool, Form()] = True,
 ) -> ImportDetailOut:
-    """Parse a CSV and stage it. Nothing is added to the ledger until commit."""
+    """Parse a CSV, Excel or PDF statement and stage it. Nothing is added to the ledger until commit."""
     content = await file.read(MAX_IMPORT_BYTES + 1)
     if len(content) > MAX_IMPORT_BYTES:
         raise PayloadTooLargeError(f"file is larger than {MAX_IMPORT_BYTES // (1024 * 1024)} MB")

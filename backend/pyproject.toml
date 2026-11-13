@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "moneyos"
-version = "0.8.0"
+version = "0.9.0"
 description = "Personal finance ledger: transaction import, cleaning, deduplication and summaries."
 requires-python = ">=3.12"
 # Lower bounds are the versions this was tested with; upper bounds stop a
@@ -21,12 +21,17 @@ dependencies = [
     "matplotlib>=3.11,<4",
     "scikit-learn>=1.9,<2",
     "joblib>=1.6,<2",
+    # Excel and PDF statement import (Phase 9). defusedxml makes openpyxl parse XML safely.
+    "openpyxl>=3.1.5,<4",
+    "defusedxml>=0.7.1,<1",
+    "pdfplumber>=0.11.10,<0.12",
 ]
 
 [project.optional-dependencies]
 # Experiments only (`moneyos ml ...`); the app itself does not need them.
 ml = ["xgboost>=3.4,<4", "statsmodels>=0.15,<0.16"]
-dev = ["pytest>=9.1,<10", "httpx2>=2.13,<3", "moneyos[ml]"]
+# fpdf2 writes the synthetic PDF statements used in tests.
+dev = ["pytest>=9.1,<10", "httpx2>=2.13,<3", "fpdf2>=2.9,<3", "moneyos[ml]"]
 
 [project.scripts]
 moneyos = "moneyos.cli:main"

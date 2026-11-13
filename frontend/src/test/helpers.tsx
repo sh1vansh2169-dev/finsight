@@ -41,7 +41,7 @@ export function fakeApi(handlers: Record<string, Handler | object>) {
 }
 
 export const ME = { id: 1, email: "you@example.com", created_at: "2026-11-01T00:00:00Z" };
-export const HEALTH = { status: "ok", version: "0.8.0", data_mode: "real", sample_data: false };
+export const HEALTH = { status: "ok", version: "0.9.0", data_mode: "real", sample_data: false };
 
 export function renderAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });

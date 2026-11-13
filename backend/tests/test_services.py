@@ -99,7 +99,7 @@ def test_commit_writes_new_rows_with_provenance_and_audit(session, rules):
     record = session.scalars(select(TransactionRecord)).one()
     assert (record.amount_minor, record.direction, record.currency) == (12000, "debit", "INR")
     assert (record.source, record.import_batch_id, record.source_file, record.source_row) == (
-        "csv_import", batch.id, "wallet.csv", 2,
+        "file_import", batch.id, "wallet.csv", 2,
     )
     assert record.created_at.tzinfo is not None
     event = session.scalars(select(AuditEvent)).one()

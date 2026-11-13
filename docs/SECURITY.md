@@ -20,7 +20,8 @@ store real financial data in it on a shared machine.**
 | Account deletion | `POST /api/v1/auth/delete-account` with the password and `confirm: true` permanently deletes the account and every record it owns |
 | Local-only by default | `moneyos serve` binds to `127.0.0.1` and refuses other addresses unless `--allow-network` is given (see TLS below) |
 | Input validation | Pydantic models with length, pattern and precision limits; unknown fields rejected; CSV values validated per row |
-| Upload limits | 5 MB per file; only the base name of the uploaded file name is kept |
+| Upload limits | 5 MB per file; only the base name of the uploaded file name is kept. Excel and PDF: at most 20,000 rows and 100 pages, 50 MB unpacked for an .xlsx, XML parsed with `defusedxml`. The file type is read from the content, never from the name |
+| Statement passwords | Password-protected PDFs are refused; MoneyOS never asks for or stores a statement password |
 | Safe database access | SQLAlchemy ORM and bound parameters only; no SQL built from user input |
 | No secrets in code | Configuration via environment variables; `.env` files are git-ignored; `.env.example` holds no values |
 | Logging | Access logs are off (query strings can contain merchant names). The application logs no transaction content, passwords or tokens |
@@ -61,6 +62,10 @@ Only someone with access to your machine can do this.
 - **Previews linger.** Previewed but never committed or discarded batches
   keep their staged rows.
 - **Dependency vulnerabilities** are not yet scanned (`pip-audit` planned).
+- **PDF parsing is complex.** `pdfminer` (via `pdfplumber`) parses
+  untrusted PDFs in the server process. The limits above bound the work,
+  but a parser bug could still be triggered by a crafted file; the server
+  only listens locally by default.
 - **PostgreSQL is untested.** The schema and migrations are written to be
   portable, but have only been run on SQLite.
 

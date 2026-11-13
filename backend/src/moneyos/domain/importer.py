@@ -11,7 +11,7 @@ from __future__ import annotations
 import csv
 import io
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
@@ -161,12 +161,31 @@ def import_text(
     ``account`` names the account for files without an account column; it
     defaults to the file name without extension.
     """
+    reader = csv.DictReader(stream)
+    # line_num is read after each row is produced, so it is that row's line.
+    records = ((reader.line_num, row) for row in reader)
+    return import_records(reader.fieldnames, records, source_file, account=account,
+                          default_currency=default_currency, day_first=day_first)
+
+
+def import_records(
+    fieldnames: list[str] | None,
+    records: Iterable[tuple[int, dict[str, str]]],
+    source_file: str,
+    *,
+    account: str | None = None,
+    default_currency: str = "INR",
+    day_first: bool = True,
+) -> FileImport:
+    """Import rows from any tabular source (CSV, Excel, PDF tables).
+
+    ``records`` yields (row number in the source, {header: cell text}).
+    """
     result = FileImport(source_file=source_file)
     fallback_account = account or Path(source_file).stem
-    reader = csv.DictReader(stream)
-    columns = map_columns(reader.fieldnames)
+    columns = map_columns(fieldnames)
 
-    for row in reader:
+    for line_num, row in records:
         def get(field_name: str) -> str:
             header = columns.get(field_name)
             return (row.get(header) or "").strip() if header else ""
@@ -175,7 +194,7 @@ def import_text(
         if not any(v.strip() for v in raw.values()):
             result.blank_rows += 1
             continue
-        result.raw_rows[reader.line_num] = raw
+        result.raw_rows[line_num] = raw
 
         try:
             description = clean_description(get("description"))
@@ -203,10 +222,10 @@ def import_text(
                 reference=None if reference.casefold() in _EMPTY_REFERENCES else reference,
                 raw_description=get("description"),
                 source_file=source_file,
-                source_row=reader.line_num,
+                source_row=line_num,
             )
         except CleaningError as error:
-            result.rejected.append(RejectedRow(source_file, reader.line_num, str(error), raw))
+            result.rejected.append(RejectedRow(source_file, line_num, str(error), raw))
             continue
         result.transactions.append(transaction)
 

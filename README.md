@@ -16,7 +16,7 @@ All of this is covered by automated tests (810 backend tests, many of them prope
 
 | Area | Implemented |
 | --- | --- |
-| CSV import | Column mapping for common layouts (signed amount, debit/credit columns, amount + DR/CR), date/amount/currency/status normalisation, per-row validation with reasons |
+| Statement import | CSV, Excel (.xlsx) and text PDF statements (file type read from the content, not the name; header found below title lines; PDF tables with or without ruling lines, wrapped descriptions joined; scanned and password-protected PDFs refused with a reason). Column mapping for common layouts (signed amount, debit/credit columns, amount + DR/CR), date/amount/currency/status normalisation, per-row validation with reasons |
 | Import workflow | Preview → commit or discard, import history, file-hash warning on re-import |
 | Duplicates | Exact match by bank reference; occurrence-aware matching otherwise; re-checked at commit time |
 | Duplicate review | Explainable near-duplicate detection across sources (e.g. payment-app export vs bank statement) with a review queue: confirm, reject, undo, all audited. Nothing is merged automatically |
@@ -42,7 +42,7 @@ All of this is covered by automated tests (810 backend tests, many of them prope
 
 ## Not built yet
 
-See the [roadmap](#roadmap). In particular: no Excel or PDF import, no forecasting model in the app (none beat simple
+See the [roadmap](#roadmap). In particular: no automatic bank connection (see [INTEGRATIONS.md](docs/INTEGRATIONS.md)), no scanned-PDF reading, no forecasting model in the app (none beat simple
 baselines; the what-if simulator uses the historical average), no payment-app integrations, no
 LLM assistant. **Every ML result so far is on synthetic data**; see
 [ML_EXPERIMENTS.md](docs/ML_EXPERIMENTS.md).
@@ -99,6 +99,7 @@ frontend/       React + TypeScript + Tailwind web app (src/pages, src/components
 - [UI_UX.md](docs/UI_UX.md): design requirements for the Phase 8 app
 - [FINSIGHT_SPEC.md](docs/FINSIGHT_SPEC.md): the FinSight spec and how it was merged
 - [RESEARCH_NOTES.md](docs/RESEARCH_NOTES.md): the research question and plan
+- [INTEGRATIONS.md](docs/INTEGRATIONS.md): can MoneyOS connect to banks automatically? (Account Aggregator research)
 
 ## Roadmap
 
@@ -112,7 +113,7 @@ frontend/       React + TypeScript + Tailwind web app (src/pages, src/components
 | 6 | ML and forecasting: categorisation, forecasting, anomaly detection, clustering, each against baselines | **Done on synthetic data** (experiments E1–E4). Shipped: category suggestions, unusual-payment flags. Not shipped: forecasting (no model beat the baselines), clustering. Next: research Models B–D |
 | 7 | Recurring payment detection, commitments, what-if simulator, rule-based recommendations | **Done** (API; screens are Phase 8). Research Models B–D are the next experiment |
 | 8 | Web app: React + TypeScript + Tailwind; user accounts, login, per-user data isolation | **Done**: accounts and isolation (8a); the web app with every module's screens (8b) |
-| 9 | More sources: Excel and supported PDF statements; authorised integrations research (Account Aggregator) | Not started; research first |
+| 9 | More sources: Excel and supported PDF statements; authorised integrations research (Account Aggregator) | **Done**: Excel and text-PDF import; research concluded that Account Aggregator access needs a regulated entity, so file import stays ([INTEGRATIONS.md](docs/INTEGRATIONS.md)) |
 | 10 | LLM assistant with tool calling, answers grounded in backend calculations | Not started |
 | 11 | PostgreSQL + Docker deployment, security review, release | Not started |
 
