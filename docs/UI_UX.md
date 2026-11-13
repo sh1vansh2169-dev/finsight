@@ -22,10 +22,13 @@ developer analytics tool.
 ## Navigation
 
 1. Home
-2. Transactions
+2. Transactions (with Review duplicates and Suggested categories)
 3. Money Majra
-4. Insights
+4. Insights (tabs: Overview, Budgets, Bills & income, What if)
 5. Profile
+
+Five items keep the phone tab bar readable; planning lives under Insights
+rather than adding a sixth.
 
 ## Screens
 

@@ -152,5 +152,24 @@ def test_scenarios(inputs):
         sim.purchase(inputs, D("0"), date(2026, 4, 5))
 
 
+def test_changes_outside_the_window_are_refused_not_silently_ignored(inputs):
+    """Found in the web app: a purchase dated on the start day changed nothing but was listed as a change."""
+    base = sim.project(inputs).net_change
+    # The window is the 30 days after 31 Mar: 1 Apr to 30 Apr, both included.
+    for outside in (date(2026, 3, 31), date(2026, 3, 1), date(2026, 5, 1)):
+        with pytest.raises(ValueError, match="between 01 Apr 2026 and 30 Apr 2026"):
+            sim.purchase(inputs, D("100"), outside)
+    assert sim.project(sim.purchase(inputs, D("100"), date(2026, 4, 1))).net_change == base - 100
+    assert sim.project(sim.purchase(inputs, D("100"), date(2026, 4, 30))).net_change == base - 100
+
+    with pytest.raises(ValueError, match="no payment of it would fall"):
+        sim.add_recurring(inputs, "Gym", D("1500"), "monthly", date(2026, 5, 1))
+    with pytest.raises(ValueError, match="no payment of it would fall"):
+        sim.add_recurring(inputs, "Course", D("1500"), "once", date(2026, 3, 31))
+    # A bill that started earlier still counts its dates inside the window, and only those.
+    started = sim.add_recurring(inputs, "Gym", D("1500"), "monthly", date(2026, 3, 15))
+    assert sim.project(started).net_change == base - 1500  # 15 Apr only; 15 Mar is before the window
+
+
 def test_same_inputs_same_answer(inputs):
     assert sim.project(inputs) == sim.project(inputs)

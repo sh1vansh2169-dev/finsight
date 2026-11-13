@@ -204,3 +204,110 @@ export interface MajraEntry {
 }
 
 export type SplitMethod = "equal" | "exact" | "percent" | "shares";
+
+export interface DuplicateCandidate {
+  id: number;
+  score: number;
+  confidence: "high" | "medium";
+  reasons: string[];
+  status: "open" | "duplicate" | "distinct" | "superseded";
+  kept_transaction_id: number | null;
+  transactions: Transaction[];
+}
+
+export interface Budget {
+  id: number;
+  category: string;
+  currency: string;
+  monthly_limit: Money;
+}
+
+export type Cadence = "once" | "weekly" | "monthly" | "quarterly" | "yearly";
+
+export interface Recurring {
+  key: string;
+  name: string;
+  direction: "debit" | "credit";
+  cadence: string;
+  typical_amount: Money;
+  low: Money;
+  high: Money;
+  amount_varies: boolean;
+  occurrences: number;
+  last: string;
+  next_expected: string;
+  category: string;
+  confidence: number;
+  reasons: string[];
+  may_have_stopped: boolean;
+  is_commitment: boolean;
+}
+
+export interface Commitment {
+  id: number;
+  name: string;
+  direction: "debit" | "credit";
+  amount: Money;
+  amount_varies: boolean;
+  high: Money | null;
+  currency: string;
+  cadence: string;
+  next_due: string;
+  end_date: string | null;
+  category: string;
+  source: string;
+  status: "active" | "paused" | "ended";
+}
+
+export interface Upcoming {
+  currency: string | null;
+  start: string;
+  end: string;
+  reserve: Money;
+  occurrences: { date: string; name: string; amount: Money; up_to: Money | null }[];
+}
+
+export type Scenario =
+  | { kind: "purchase"; amount: string; date: string; description: string }
+  | { kind: "new_recurring"; name: string; amount: string; cadence: Cadence; first_due: string; money_in: boolean }
+  | { kind: "reduce_category"; category: string; percent: string }
+  | { kind: "delay_repayment"; person: string }
+  | { kind: "skip_commitment"; name: string };
+
+export interface SimProjection {
+  start: string;
+  end: string;
+  currency: string;
+  net_change: { estimate: Money; cautious: Money | null; hopeful: Money | null };
+  balance: { estimate: Money; cautious: Money | null; hopeful: Money | null } | null;
+  commitments: { money_in: Money; money_out: Money; money_out_high: Money };
+  everyday_spending: { estimate: Money; low: Money | null; high: Money | null; per_day: Money; history_days: number };
+  not_included: { if_others_repay_you: Money; if_you_repay_others: Money };
+  reserve_for_commitments: Money;
+  occurrences: { date: string; name: string; amount: Money }[];
+  path: { date: string; net_change: Money }[];
+  assumptions: string[];
+  changes: string[];
+}
+
+export interface Simulation {
+  note: string;
+  baseline: SimProjection;
+  scenario?: SimProjection;
+  difference?: { net_change: Money; balance: Money | null };
+}
+
+export interface CategorySuggestion {
+  transaction: Transaction;
+  category: string;
+  confidence: number;
+  confident: boolean;
+  alternatives: { category: string; confidence: number }[];
+}
+
+export interface Suggestions {
+  model_version: string;
+  threshold: number;
+  note: string;
+  suggestions: CategorySuggestion[];
+}

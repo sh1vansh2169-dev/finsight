@@ -197,6 +197,9 @@ def project(inputs: Inputs) -> Projection:
 def purchase(inputs: Inputs, amount: Decimal, on: date, description: str = "Purchase") -> Inputs:
     if amount <= 0:
         raise ValueError("amount must be positive")
+    if not inputs.start < on <= inputs.end:
+        # Outside the window it would change nothing, while being listed as a change.
+        raise ValueError(f"the date must be between {inputs.start + timedelta(days=1):%d %b %Y} and {inputs.end:%d %b %Y}")
     return replace(inputs, occurrences=inputs.occurrences + (Occurrence(on, description, -amount),),
                    changes=inputs.changes + (f"One-off: {description}, {amount:,.2f} on {on:%d %b}",))
 
@@ -206,7 +209,11 @@ def add_recurring(inputs: Inputs, name: str, amount: Decimal, cadence: str, firs
     if amount <= 0:
         raise ValueError("amount must be positive")
     signed = amount if money_in else -amount
-    new = tuple(Occurrence(d, name, signed) for d in schedule(first_due, cadence, first_due, inputs.end))
+    new = tuple(Occurrence(d, name, signed) for d in schedule(first_due, cadence, first_due, inputs.end)
+                if d > inputs.start)
+    if not new:
+        raise ValueError(f"no payment of it would fall between {inputs.start + timedelta(days=1):%d %b %Y} "
+                         f"and {inputs.end:%d %b %Y}")
     return replace(inputs, occurrences=inputs.occurrences + new,
                    changes=inputs.changes + (f"New {cadence} {'income' if money_in else 'payment'}: {name}, "
                                              f"{amount:,.2f} from {first_due:%d %b}",))

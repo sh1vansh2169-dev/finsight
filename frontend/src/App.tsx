@@ -5,12 +5,11 @@ import { RouterProvider } from "react-router/dom";
 import { ApiError } from "./api/client";
 import { AppShell } from "./components/AppShell";
 import { useTheme } from "./lib/theme";
-import { Home } from "./pages/Home";
-import { Insights } from "./pages/Insights";
-import { MoneyMajra } from "./pages/MoneyMajra";
-import { Profile } from "./pages/Profile";
 import { SignIn } from "./pages/SignIn";
-import { Transactions } from "./pages/Transactions";
+
+// Each screen is loaded the first time it is opened, so the first visit downloads
+// only what it shows (the chart library, for example, comes with Home only).
+const page = (load: () => Promise<{ Component: React.ComponentType }>) => ({ lazy: load });
 
 export const routes = [
   { path: "/sign-in", element: <SignIn /> },
@@ -18,11 +17,22 @@ export const routes = [
     path: "/",
     element: <AppShell />,
     children: [
-      { index: true, element: <Home /> },
-      { path: "transactions", element: <Transactions /> },
-      { path: "money-majra", element: <MoneyMajra /> },
-      { path: "insights", element: <Insights /> },
-      { path: "profile", element: <Profile /> },
+      { index: true, ...page(async () => ({ Component: (await import("./pages/Home")).Home })) },
+      { path: "transactions", ...page(async () => ({ Component: (await import("./pages/Transactions")).Transactions })) },
+      { path: "transactions/review", ...page(async () => ({ Component: (await import("./pages/Review")).Review })) },
+      { path: "transactions/suggestions", ...page(async () => ({ Component: (await import("./pages/Suggestions")).Suggestions })) },
+      { path: "money-majra", ...page(async () => ({ Component: (await import("./pages/MoneyMajra")).MoneyMajra })) },
+      {
+        path: "insights",
+        ...page(async () => ({ Component: (await import("./pages/Insights")).Insights })),
+        children: [
+          { index: true, ...page(async () => ({ Component: (await import("./pages/Insights")).InsightsOverview })) },
+          { path: "budgets", ...page(async () => ({ Component: (await import("./pages/Budgets")).Budgets })) },
+          { path: "bills", ...page(async () => ({ Component: (await import("./pages/Bills")).Bills })) },
+          { path: "what-if", ...page(async () => ({ Component: (await import("./pages/WhatIf")).WhatIf })) },
+        ],
+      },
+      { path: "profile", ...page(async () => ({ Component: (await import("./pages/Profile")).Profile })) },
     ],
   },
   {

@@ -200,6 +200,12 @@ no CORS, and the session cookie never leaves the site.
   inside the build folder are served as they are; any other path gets
   `index.html` so the router can handle it. `/api`, `/docs` and `/health`
   are never shadowed. Every response carries the CSP and other headers.
+- **Screens load on demand.** Each route is a lazy import, so the first
+  visit downloads only the shell (about 116 kB compressed) and each screen
+  arrives when first opened; the chart library comes with Home only.
+- **Model output is worded as a question.** Category suggestions read
+  "Looks like Health?", confidence is never shown as 100% or 0%, and
+  alternatives the model gives under 5% are hidden.
 - **Design tokens** (colours for light and dark, radius) are CSS variables
   in `src/index.css`, exposed to Tailwind with `@theme inline`. Text
   colours were checked for at least 4.5:1 contrast and form borders for

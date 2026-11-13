@@ -11,7 +11,7 @@ the foundation for later analytics, forecasting and ML work.
 
 ## What works today
 
-All of this is covered by automated tests (809 backend tests, many of them property-based checks over random cases, and 25 web-app tests, all passing at the last run; see
+All of this is covered by automated tests (810 backend tests, many of them property-based checks over random cases, and 37 web-app tests, all passing at the last run; see
 [DEVELOPMENT.md](docs/DEVELOPMENT.md) to run them yourself).
 
 | Area | Implemented |
@@ -38,13 +38,11 @@ All of this is covered by automated tests (809 backend tests, many of them prope
 | API | FastAPI backend with OpenAPI docs at `/docs` |
 | Accounts and privacy | Sign-up, sign-in and sign-out; passwords hashed with scrypt; revocable sessions stored only as hashes; lockout after repeated failures; every user sees only their own data, enforced in the database layer; delete your account and all your data |
 | Data separation | Sample and real data live in separate, stamped databases that refuse to be mixed |
-| Web app (first screens) | React + TypeScript + Tailwind, served by the backend: sign-in; Home (month figures, daily chart with uncovered days as gaps, 30-day outlook, budgets, Money Majra, recent transactions); Transactions (search, filters, category and type corrections, two-step statement import); Money Majra (add people and groups, shared expenses split equally or by exact amounts, percentages or shares, loans, repayments with a repeat-payment check, cancel an entry with a reason); Insights (read-only); Profile (theme, sign out, delete account). Light and dark themes; phone and desktop layouts |
+| Web app | React + TypeScript + Tailwind, served by the backend: sign-in; Home (month figures, daily chart with uncovered days as gaps, 30-day outlook, budgets, Money Majra, recent transactions); Transactions (search, filters, category and type corrections, two-step statement import, possible-duplicate markers, duplicate review with undo, suggested categories to accept); Money Majra (add people and groups, shared expenses split equally or by exact amounts, percentages or shares, loans, repayments with a repeat-payment check, cancel an entry with a reason); Insights (suggestions, unusual payments you can mark as expected, spending by category, budgets, bills and income: upcoming payments, commitments, detected regular payments to confirm, and the what-if simulator); Profile (theme, sign out, delete account). Light and dark themes; phone and desktop layouts |
 
 ## Not built yet
 
-See the [roadmap](#roadmap). In particular: the web app cannot yet
-review duplicates, manage budgets or commitments, or run the what-if simulator (all of these work
-through the API at `/docs`), no forecasting model in the app (none beat simple
+See the [roadmap](#roadmap). In particular: no Excel or PDF import, no forecasting model in the app (none beat simple
 baselines; the what-if simulator uses the historical average), no payment-app integrations, no
 LLM assistant. **Every ML result so far is on synthetic data**; see
 [ML_EXPERIMENTS.md](docs/ML_EXPERIMENTS.md).
@@ -113,7 +111,7 @@ frontend/       React + TypeScript + Tailwind web app (src/pages, src/components
 | 5 | Money Majra: lending, borrowing, shared expenses, repayments, settlements | **Done** (API; screens are Phase 8) |
 | 6 | ML and forecasting: categorisation, forecasting, anomaly detection, clustering, each against baselines | **Done on synthetic data** (experiments E1–E4). Shipped: category suggestions, unusual-payment flags. Not shipped: forecasting (no model beat the baselines), clustering. Next: research Models B–D |
 | 7 | Recurring payment detection, commitments, what-if simulator, rule-based recommendations | **Done** (API; screens are Phase 8). Research Models B–D are the next experiment |
-| 8 | Web app: React + TypeScript + Tailwind; user accounts, login, per-user data isolation | **In progress**: accounts and isolation done (8a); web app first screens and Money Majra forms done (8b, steps 1–2); duplicate review, budgets, commitments and the simulator next |
+| 8 | Web app: React + TypeScript + Tailwind; user accounts, login, per-user data isolation | **Done**: accounts and isolation (8a); the web app with every module's screens (8b) |
 | 9 | More sources: Excel and supported PDF statements; authorised integrations research (Account Aggregator) | Not started; research first |
 | 10 | LLM assistant with tool calling, answers grounded in backend calculations | Not started |
 | 11 | PostgreSQL + Docker deployment, security review, release | Not started |

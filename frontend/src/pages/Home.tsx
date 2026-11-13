@@ -35,7 +35,12 @@ export function Home() {
 
       {d.warnings.length > 0 && (
         <div className="mt-4 flex flex-col gap-2">
-          {d.warnings.slice(0, 3).map((w) => <Notice key={w} tone="warn">{w}</Notice>)}
+          {d.warnings.slice(0, 3).map((w) => (
+            <Notice key={w} tone="warn">
+              {w}
+              {/possible duplicate/.test(w) && <> <Link to="/transactions/review" className="font-medium underline">Review them</Link></>}
+            </Notice>
+          ))}
         </div>
       )}
 

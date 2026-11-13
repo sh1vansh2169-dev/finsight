@@ -1,15 +1,44 @@
+import { NavLink, Outlet } from "react-router";
+
 import { useDashboard, useRecommendations, useUnusual } from "../api/hooks";
+import { useDismissUnusual } from "../api/more";
+import type { UnusualPayment } from "../api/types";
 import { PageTitle } from "../components/AppShell";
-import { Amount, Card, EmptyState, ErrorNote, Loading } from "../components/ui";
+import { Amount, Button, Card, EmptyState, ErrorNote, Loading } from "../components/ui";
 import { money, shortDate } from "../lib/format";
 
+const TABS = [
+  { to: "/insights", label: "Overview", end: true },
+  { to: "/insights/budgets", label: "Budgets", end: false },
+  { to: "/insights/bills", label: "Bills & income", end: false },
+  { to: "/insights/what-if", label: "What if", end: false },
+];
+
+/** Insights and planning, as tabs. */
 export function Insights() {
+  return (
+    <>
+      <PageTitle title="Insights" subtitle="Patterns in your recorded money, and plans for what comes next. Suggestions only; nothing happens automatically." />
+      <nav aria-label="Insights sections" className="mb-5 flex gap-1 overflow-x-auto border-b border-line">
+        {TABS.map((t) => (
+          <NavLink key={t.to} to={t.to} end={t.end}
+            className={({ isActive }) =>
+              `whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${isActive ? "border-primary text-primary-ink" : "border-transparent text-muted hover:text-ink"}`}>
+            {t.label}
+          </NavLink>
+        ))}
+      </nav>
+      <Outlet />
+    </>
+  );
+}
+
+export function InsightsOverview() {
   const recommendations = useRecommendations();
   const unusual = useUnusual();
   const dashboard = useDashboard();
   return (
     <>
-      <PageTitle title="Insights" subtitle="Patterns in your recorded spending. Suggestions only; nothing happens automatically." />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Suggestions">
           {recommendations.isPending ? <Loading /> : recommendations.isError ? <ErrorNote error={recommendations.error} /> :
@@ -30,15 +59,7 @@ export function Insights() {
               <p className="mb-3 text-xs text-muted">{unusual.data.note}</p>
               {unusual.data.payments.length === 0 ? <EmptyState title="Nothing unusual" /> : (
                 <ul className="divide-y divide-line">
-                  {unusual.data.payments.map((u) => (
-                    <li key={u.transaction.id} className="py-2">
-                      <div className="flex justify-between gap-3 text-sm">
-                        <span className="truncate font-medium">{u.transaction.description}</span>
-                        <Amount value={u.transaction.amount} currency={u.transaction.currency} />
-                      </div>
-                      <p className="text-xs text-muted">{shortDate(u.transaction.date)} · {u.reason}</p>
-                    </li>
-                  ))}
+                  {unusual.data.payments.map((u) => <Unusual key={u.transaction.id} u={u} />)}
                 </ul>
               )}
             </>
@@ -51,6 +72,26 @@ export function Insights() {
         )}
       </Card>
     </>
+  );
+}
+
+function Unusual({ u }: { u: UnusualPayment }) {
+  const dismiss = useDismissUnusual();
+  return (
+    <li className="py-2">
+      <div className="flex justify-between gap-3 text-sm">
+        <span className="truncate font-medium">{u.transaction.description}</span>
+        <Amount value={u.transaction.amount} currency={u.transaction.currency} />
+      </div>
+      <p className="text-xs text-muted">{shortDate(u.transaction.date)} · {u.reason}</p>
+      <div className="mt-1">
+        <Button variant="quiet" onClick={() => dismiss.mutate({ id: u.transaction.id })} disabled={dismiss.isPending}
+          aria-label={`${u.transaction.description}: this was expected`}>
+          This was expected
+        </Button>
+      </div>
+      {dismiss.error && <ErrorNote error={dismiss.error} />}
+    </li>
   );
 }
 

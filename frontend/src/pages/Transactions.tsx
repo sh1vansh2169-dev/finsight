@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 
 import { useAccounts, useCategories, useCorrectTransaction, useTransactions, type TransactionFilters } from "../api/hooks";
+import { useDuplicates, useSuggestions } from "../api/more";
 import type { Transaction } from "../api/types";
 import { PageTitle } from "../components/AppShell";
 import { Icon } from "../components/Icon";
@@ -36,6 +38,11 @@ export function Transactions() {
   const page = useTransactions(active, limit);
   const categories = useCategories();
   const accounts = useAccounts();
+  const duplicates = useDuplicates("open");
+  const suggestions = useSuggestions();
+  const possibleDuplicates = new Set(duplicates.data?.flatMap((c) => c.transactions.map((t) => t.id)) ?? []);
+  const toReview = duplicates.data?.length ?? 0;
+  const toCategorise = suggestions.data?.suggestions.length ?? 0;
 
   const set = (key: keyof TransactionFilters, value: string) => {
     setFilters((f) => ({ ...f, [key]: value || undefined }));
@@ -47,6 +54,21 @@ export function Transactions() {
       <PageTitle title="Transactions"
         action={<Button onClick={() => setImporting((v) => !v)} aria-expanded={importing}><Icon name="upload" className="h-4 w-4" />Import statement</Button>} />
       {importing && <ImportPanel onClose={() => setImporting(false)} />}
+
+      {(toReview > 0 || toCategorise > 0) && (
+        <nav aria-label="Needs your attention" className="mb-4 flex flex-wrap gap-2">
+          {toReview > 0 && (
+            <Link to="/transactions/review" className="rounded-full bg-warn-bg px-3 py-1.5 text-sm font-medium text-warn-ink">
+              {toReview} possible duplicate(s) to review
+            </Link>
+          )}
+          {toCategorise > 0 && (
+            <Link to="/transactions/suggestions" className="rounded-full bg-primary-soft px-3 py-1.5 text-sm font-medium text-primary-ink">
+              {toCategorise} suggested categor{toCategorise === 1 ? "y" : "ies"}
+            </Link>
+          )}
+        </nav>
+      )}
 
       <div className="mb-4 flex flex-wrap gap-2" role="search">
         <input type="search" placeholder="Search descriptions" aria-label="Search descriptions" value={text}
@@ -76,7 +98,7 @@ export function Transactions() {
         <Card>
           <p className="mb-2 text-sm text-muted" aria-live="polite">{page.data.total} transaction(s)</p>
           <ul className="divide-y divide-line">
-            {page.data.items.map((t) => <Row key={t.id} t={t} categories={categories.data ?? []} />)}
+            {page.data.items.map((t) => <Row key={t.id} t={t} categories={categories.data ?? []} maybeDuplicate={possibleDuplicates.has(t.id)} />)}
           </ul>
           {page.data.items.length < page.data.total && (
             <div className="mt-4 text-center">
@@ -91,7 +113,7 @@ export function Transactions() {
   );
 }
 
-function Row({ t, categories }: { t: Transaction; categories: string[] }) {
+function Row({ t, categories, maybeDuplicate }: { t: Transaction; categories: string[]; maybeDuplicate: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <li className="py-2">
@@ -103,10 +125,16 @@ function Row({ t, categories }: { t: Transaction; categories: string[] }) {
             <span>{shortDate(t.date)}</span><span>·</span><span>{t.account}</span><span>·</span>
             <span>{categoryLabel(t)}</span><BasisBadge basis={t.category === "Uncategorized" ? t.type_basis : t.category_basis} />
             {t.status === "failed" && <span className="font-medium text-danger-ink">Failed: not counted</span>}
+            {maybeDuplicate && <span className="rounded-full bg-warn-bg px-2 text-warn-ink">Possible duplicate</span>}
           </p>
         </div>
         <Amount value={t.amount} currency={t.currency} className="shrink-0 text-sm" />
       </button>
+      {open && maybeDuplicate && (
+        <p className="mt-2 text-xs">
+          This may be the same payment as another record. <Link to="/transactions/review" className="font-medium text-primary-ink underline">Review it</Link>
+        </p>
+      )}
       {open && <Editor t={t} categories={categories} onDone={() => setOpen(false)} />}
     </li>
   );

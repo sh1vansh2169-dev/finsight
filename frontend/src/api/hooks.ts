@@ -85,12 +85,17 @@ export function useAccounts() {
   return useQuery({ queryKey: ["accounts"], queryFn: () => api<Account[]>("/accounts") });
 }
 
+const LEDGER_KEYS = [
+  "transactions", "dashboard", "categories", "accounts", "recommendations", "majra-summary", "duplicates",
+  "suggestions", "unusual", "budget-usage", "recurring", "upcoming", "simulation",
+];
+
 /** After any change to the ledger, everything derived from it is refetched. */
-function useInvalidateLedger() {
+export function useInvalidateLedger() {
   const client = useQueryClient();
   return () =>
     Promise.all(
-      ["transactions", "dashboard", "categories", "accounts", "recommendations", "majra-summary"].map((key) =>
+      LEDGER_KEYS.map((key) =>
         client.invalidateQueries({ queryKey: [key] }),
       ),
     );
