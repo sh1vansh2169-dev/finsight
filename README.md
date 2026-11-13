@@ -128,3 +128,8 @@ The FinSight specification was merged into this plan on 2026-11-11; see
 what was kept from FinSight.
 
 All data in this repository is synthetic. Never commit real statements.
+
+## License
+
+MIT; see [LICENSE](LICENSE). Not financial advice: FinSight reports recorded
+totals and estimates, and never moves money.

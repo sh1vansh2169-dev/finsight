@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit -p .",
     "preview": "vite preview"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "type": "module",
   "dependencies": {
     "@tanstack/react-query": "^5.107.1",
