@@ -390,6 +390,18 @@ synthetic statement as CSV, Excel and PDF and requires identical results.
   50 MB unpacked for an .xlsx (a "zip bomb" check before parsing), and
   `defusedxml` for the workbook's XML.
 
+### Statement inbox (`services/inbox.py`)
+
+A background thread scans the inbox folder every 5 seconds. A file is read
+only when its size matches the previous scan (so a download in progress is
+never read half-written), then goes through `imports.preview_import` exactly
+like an upload, in the owning user's session, and stops at the preview: the
+user commits or discards it in the app. Files move to `done/` or
+`could not read/` (with the reason) so nothing is read twice. Partial
+downloads (`.crdownload`, `.part`, ...) and hidden or temporary files are
+ignored. With several accounts the owner must be named, so a statement can
+never land in the wrong person's ledger.
+
 ### Sample and real data never mix
 Each database is stamped (`app_meta.data_mode`) the first time it is opened.
 A sample database cannot be opened in real mode or the reverse, and a

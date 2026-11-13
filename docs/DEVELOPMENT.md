@@ -117,6 +117,20 @@ from synthetic fixtures (`src/test/fixtures.ts`), and drive the real router.
 jsdom does not see files attached with `user.upload` when checking a
 `required` file input, so the import test submits the form directly.
 
+## Statement inbox (optional)
+
+```powershell
+.\.venv\Scripts\moneyos.exe serve --watch "$env:USERPROFILE\Downloads\FinSight"
+```
+
+Save statements into that folder, or into a subfolder named after the
+account (`FinSight\HDFC Savings\march.pdf`). Within a few seconds each
+appears under Transactions as waiting for review; it is never added on
+its own. Read files move to `done\`, unreadable ones to `could not read\`
+with a `.txt` note. With more than one account, set `MONEYOS_WATCH_USER`
+to the email whose ledger the inbox fills. The same can be set with
+`MONEYOS_WATCH_DIR`.
+
 ## The assistant (optional)
 
 1. Install Ollama from https://ollama.com and start it.

@@ -118,6 +118,7 @@ export interface ImportRow {
 export interface ImportBatch {
   id: number;
   filename: string;
+  created_at?: string;
   status: "previewed" | "committed" | "discarded";
   total_rows: number;
   rejected_rows: number;

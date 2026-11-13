@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile, status
 from sqlalchemy.orm import Session
 
 from moneyos.api.deps import get_rules, get_session, get_settings
@@ -97,6 +97,19 @@ def discard_import(batch_id: int, session: SessionDep) -> ImportBatchOut:
 @router.get("/imports", response_model=list[ImportBatchOut], tags=["imports"])
 def list_imports(session: SessionDep) -> list[ImportBatchOut]:
     return [_batch_out(session, b) for b in imports.list_batches(session)]
+
+
+@router.get("/imports/inbox", tags=["imports"])
+def inbox_status(request: Request, settings: SettingsDep) -> dict:
+    """Whether the statement inbox is on, where it is, and what the last scan found."""
+    watcher = getattr(request.app.state, "inbox_watcher", None)
+    last = watcher.last if watcher else None
+    return {
+        "enabled": settings.watch_dir is not None,
+        "folder": str(settings.watch_dir.resolve()) if settings.watch_dir else None,
+        "note": last.note if last else None,
+        "waiting": last.waiting if last else [],
+    }
 
 
 @router.get("/imports/{batch_id}", response_model=ImportDetailOut, tags=["imports"])

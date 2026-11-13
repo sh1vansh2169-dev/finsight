@@ -12,6 +12,11 @@ what is imported, every file goes through the same preview-then-commit
 step, and FinSight never holds a bank login. See
 [ARCHITECTURE.md](ARCHITECTURE.md#statement-formats).
 
+The statement inbox removes the upload step: point your browser's or
+phone-sync tool's download folder at it and statements appear in
+FinSight for review by themselves. Your UPI payments are also in your bank
+statement, whichever app made them.
+
 ## India's Account Aggregator (AA) framework
 
 The authorised way to share financial data between institutions in India.

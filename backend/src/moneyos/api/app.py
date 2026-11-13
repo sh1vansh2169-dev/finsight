@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
@@ -41,11 +43,28 @@ _ERROR_STATUS = {
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        watcher = None
+        if settings.watch_dir is not None:
+            from moneyos.services.inbox import Inbox, InboxWatcher
+
+            watcher = InboxWatcher(Inbox(settings.watch_dir, app.state.session_factory, app.state.rules,
+                                         user_email=settings.watch_user))
+            watcher.start()
+        app.state.inbox_watcher = watcher
+        yield
+        if watcher is not None:
+            watcher.stop()
+
     app = FastAPI(
         title="FinSight API",
         version=__version__,
         description="Local personal-finance ledger. Totals are recorded totals, not bank balances.",
+        lifespan=lifespan,
     )
+    app.state.inbox_watcher = None
     app.state.settings = settings
     app.state.rules = load_rules(settings.rules_file)
     app.state.session_factory = init_db(settings.database_url, settings.data_mode)

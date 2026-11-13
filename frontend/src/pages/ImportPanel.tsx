@@ -4,6 +4,7 @@ import { useFinishImport, usePreviewImport } from "../api/hooks";
 import type { ImportDetail } from "../api/types";
 import { Amount, Button, Card, ErrorNote, Notice } from "../components/ui";
 import { shortDate } from "../lib/format";
+import { InboxHint } from "./Pending";
 
 const OUTCOME: Record<string, { label: string; className: string }> = {
   new: { label: "Will be added", className: "bg-primary-soft text-primary-ink" },
@@ -13,11 +14,11 @@ const OUTCOME: Record<string, { label: string; className: string }> = {
 };
 
 /** Import in two steps: preview everything first, then add it or throw it away. */
-export function ImportPanel({ onClose }: { onClose: () => void }) {
+export function ImportPanel({ onClose, initial }: { onClose: () => void; initial?: ImportDetail }) {
   const [file, setFile] = useState<File | null>(null);
   const [account, setAccount] = useState("");
   const [dayFirst, setDayFirst] = useState(true);
-  const [preview, setPreview] = useState<ImportDetail | null>(null);
+  const [preview, setPreview] = useState<ImportDetail | null>(initial ?? null);
   const [done, setDone] = useState<string | null>(null);
   const previewing = usePreviewImport();
   const finishing = useFinishImport();
@@ -43,7 +44,7 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Card title="Import a statement" className="mb-6" action={<Button variant="quiet" onClick={onClose}>Close</Button>}>
+    <Card title={initial ? "Review a statement" : "Import a statement"} className="mb-6" action={<Button variant="quiet" onClick={onClose}>Close</Button>}>
       {!preview && (
         <form onSubmit={onPreview} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-sm font-medium">
@@ -72,6 +73,7 @@ export function ImportPanel({ onClose }: { onClose: () => void }) {
             CSV, Excel (.xlsx) or PDF. PDFs must contain text with a transaction table; scanned or password-protected
             PDFs can't be read. Nothing is saved until you choose to add it.
           </p>
+          <InboxHint />
         </form>
       )}
 

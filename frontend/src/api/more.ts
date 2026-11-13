@@ -5,7 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, query } from "./client";
 import { useInvalidateLedger } from "./hooks";
 import type {
-  Budget, BudgetUse, Commitment, DuplicateCandidate, Recurring, Scenario, Simulation, Suggestions, Upcoming,
+  Budget, BudgetUse, Commitment, DuplicateCandidate, ImportBatch, ImportDetail, Recurring, Scenario, Simulation,
+  Suggestions, Upcoming,
 } from "./types";
 
 // ---------------------------------------------------------------- duplicate review
@@ -165,5 +166,35 @@ export function useAsk() {
   return useMutation({
     mutationFn: (body: { question: string; history: { role: "user" | "assistant"; content: string }[] }) =>
       api<AssistantAnswer>("/assistant/ask", { body }),
+  });
+}
+
+// ---------------------------------------------------------------- statement inbox
+
+export interface InboxStatus {
+  enabled: boolean;
+  folder: string | null;
+  note: string | null;
+  waiting: string[];
+}
+
+export function useInboxStatus() {
+  return useQuery({ queryKey: ["inbox"], queryFn: () => api<InboxStatus>("/imports/inbox"), refetchInterval: 15_000 });
+}
+
+/** Statements staged by the inbox (or an upload left unfinished), waiting for the user's decision. */
+export function usePendingImports() {
+  return useQuery({
+    queryKey: ["imports", "pending"],
+    queryFn: async () => (await api<ImportBatch[]>("/imports")).filter((b) => b.status === "previewed"),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useImportDetail(id: number | null) {
+  return useQuery({
+    queryKey: ["imports", "detail", id],
+    queryFn: () => api<ImportDetail>(`/imports/${id}`),
+    enabled: id !== null,
   });
 }

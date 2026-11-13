@@ -38,6 +38,10 @@ class Settings:
     assistant_model: str = "qwen2.5:7b"
     # Money data is sent to the model. Only a model on this machine is allowed unless this is true.
     assistant_allow_remote: bool = False
+    # Statement inbox: statements saved here are picked up and staged for review. Off when None.
+    watch_dir: Path | None = None
+    # Whose ledger the inbox fills; may be left empty when there is only one account.
+    watch_user: str | None = None
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None, **overrides) -> Settings:
@@ -55,6 +59,8 @@ class Settings:
             "ollama_url": env.get("MONEYOS_OLLAMA_URL") or "http://127.0.0.1:11434",
             "assistant_model": env.get("MONEYOS_ASSISTANT_MODEL") or "qwen2.5:7b",
             "assistant_allow_remote": (env.get("MONEYOS_ASSISTANT_ALLOW_REMOTE") or "").lower() in ("1", "true", "yes"),
+            "watch_dir": Path(env["MONEYOS_WATCH_DIR"]) if env.get("MONEYOS_WATCH_DIR") else None,
+            "watch_user": env.get("MONEYOS_WATCH_USER") or None,
         }
         values.update({k: v for k, v in overrides.items() if v is not None})
         return cls(**values)

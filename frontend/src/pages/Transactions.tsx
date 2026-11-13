@@ -9,6 +9,7 @@ import { Icon } from "../components/Icon";
 import { Amount, BasisBadge, Button, Card, EmptyState, ErrorNote, Loading } from "../components/ui";
 import { basisLabel, categoryLabel, shortDate, typeLabel } from "../lib/format";
 import { ImportPanel } from "./ImportPanel";
+import { PendingStatements } from "./Pending";
 
 const PAGE = 50;
 // Types each direction can have (mirrors the API's rule; the API checks it too).
@@ -54,6 +55,7 @@ export function Transactions() {
       <PageTitle title="Transactions"
         action={<Button onClick={() => setImporting((v) => !v)} aria-expanded={importing}><Icon name="upload" className="h-4 w-4" />Import statement</Button>} />
       {importing && <ImportPanel onClose={() => setImporting(false)} />}
+      <PendingStatements />
 
       {(toReview > 0 || toCategorise > 0) && (
         <nav aria-label="Needs your attention" className="mb-4 flex flex-wrap gap-2">

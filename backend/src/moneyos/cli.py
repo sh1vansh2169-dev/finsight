@@ -60,6 +60,8 @@ def _build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8000)
     serve.add_argument("--sample", action="store_true", help="serve the synthetic sample database")
+    serve.add_argument("--watch", metavar="FOLDER",
+                       help="statement inbox: statements saved in FOLDER are picked up for review")
     serve.add_argument("--allow-network", action="store_true",
                        help="listen on a non-local address (plain HTTP: put it behind TLS first)")
     return parser
@@ -323,7 +325,8 @@ def _cmd_serve(args) -> int:
     from moneyos.api.app import create_app
     from moneyos.db.session import DataModeError
 
-    settings = Settings.from_env(data_mode=DataMode.SAMPLE if args.sample else None)
+    settings = Settings.from_env(data_mode=DataMode.SAMPLE if args.sample else None,
+                                 watch_dir=Path(args.watch) if args.watch else None)
     if not _is_loopback(args.host) and not args.allow_network:
         print(
             "error: refusing to listen on a non-local address. FinSight speaks plain HTTP, so passwords would "
@@ -338,6 +341,8 @@ def _cmd_serve(args) -> int:
         return 2
     label = "SAMPLE DATA" if settings.data_mode == DataMode.SAMPLE else "real data"
     print(f"FinSight API ({label}) on http://{args.host}:{args.port}  docs: /docs")
+    if settings.watch_dir:
+        print(f"Statement inbox: {settings.watch_dir.resolve()} (statements saved here appear in the app for review)")
     # access_log is off: URLs can carry filter values such as merchant names.
     uvicorn.run(app, host=args.host, port=args.port, access_log=False)
     return 0

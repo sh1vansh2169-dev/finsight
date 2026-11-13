@@ -87,7 +87,7 @@ export function useAccounts() {
 
 const LEDGER_KEYS = [
   "transactions", "dashboard", "categories", "accounts", "recommendations", "majra-summary", "duplicates",
-  "suggestions", "unusual", "budget-usage", "recurring", "upcoming", "simulation",
+  "suggestions", "unusual", "budget-usage", "recurring", "upcoming", "simulation", "imports",
 ];
 
 /** After any change to the ledger, everything derived from it is refetched. */
