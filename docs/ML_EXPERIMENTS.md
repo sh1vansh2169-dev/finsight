@@ -278,3 +278,37 @@ nothing.
 **Decision.** No clustering feature in the app: MoneyOS has one user, so
 there is no population. If multi-user data ever exists, clusters must be
 reported with their silhouette and never shown as labels for people.
+
+### E5: Research Model B, adding recorded upcoming bills (plan fixed 2026-11-13, before any run)
+
+**Question.** Does telling a forecaster about the bills the user has
+recorded (Model B) forecast total spending over the next 7 or 30 days
+better than transactions alone (Model A, from E2)?
+
+**Data.** The same 20 simulated people and 730 days as E2, with commitment
+payments re-simulated under two conditions:
+
+* *ideal* (upper bound only): every bill recorded, paid on its due date,
+  amounts as recorded (the utility bill still varies 0.8-1.25x).
+* *realistic* (**primary**): each bill recorded by the user with probability
+  0.8; each payment late by 1-6 days with probability 0.3; missed with
+  probability 0.04 and paid together with the next one; rent rises 5-10% at
+  a random month in the second year without the record being updated; each
+  subscription cancelled at a random point with probability 0.3 while still
+  listed in the record.
+
+**Methods.** Model A: the four E2 baselines on total spending. Model B:
+recorded bills due in the window (as the user's record projects them) plus
+each of the same four baselines applied to the rest of the history (total
+minus payments of recorded bills). No model is trained.
+
+**Protocol.** E2's origins, purged chronological split and rules: each
+family's method is chosen on calibration MAE and reported on test; 80%
+intervals from calibration error quantiles.
+
+**Success criterion (fixed in advance).** On the realistic condition, for a
+horizon: Model B (chosen on calibration) has test MAE at least 5% lower than
+Model A (chosen on calibration), *and* the 95% bootstrap interval of the MAE
+difference, resampling people (2,000 resamples, seed 0), excludes zero.
+Otherwise the result is reported as no improvement. The ideal condition is
+never used to claim an improvement.
