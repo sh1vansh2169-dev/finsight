@@ -54,6 +54,13 @@ then `POST /api/v1/imports/{id}/commit`.
 Run commands from the repo root: default database paths are relative to
 the current directory.
 
+## Checking dependencies for known vulnerabilities
+
+```powershell
+.\.venv\Scripts\python.exe -m pip_audit       # Python packages
+cd frontend; npm audit                          # web app packages
+```
+
 ## Database schema changes
 
 The app migrates its database automatically on startup. To change the

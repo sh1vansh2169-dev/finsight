@@ -62,7 +62,10 @@ Only someone with access to your machine can do this.
   with the `moneyos user set-password` command on the machine.
 - **Previews linger.** Previewed but never committed or discarded batches
   keep their staged rows.
-- **Dependency vulnerabilities** are not yet scanned (`pip-audit` planned).
+- **Dependency scans are manual.** On 2026-11-13 `npm audit` found nothing and
+  `pip-audit` found one issue, in `certifi` (pulled in by test and tooling
+  packages), fixed by upgrading it. Run both before each release (see
+  DEVELOPMENT.md); they only know about already-reported vulnerabilities.
 - **The assistant can be misled.** Text in transaction descriptions
   reaches the model, and a description written to manipulate it could make
   an answer wrong (the tools are read-only, so it cannot do more). Figures it
