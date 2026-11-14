@@ -16,7 +16,7 @@ the foundation for later analytics, forecasting and ML work.
 
 ## What works today
 
-All of this is covered by automated tests (920 backend tests, many of them property-based checks over random cases, and 50 web-app tests, all passing at the last run; see
+All of this is covered by automated tests (927 backend tests, many of them property-based checks over random cases, 50 web-app tests and 5 phone tests, all passing at the last run; see
 [DEVELOPMENT.md](docs/DEVELOPMENT.md) to run them yourself).
 
 | Area | Implemented |
@@ -125,7 +125,7 @@ frontend/       React + TypeScript + Tailwind web app (src/pages, src/components
 | 8 | Web app: React + TypeScript + Tailwind; user accounts, login, per-user data isolation | **Done**: accounts and isolation (8a); the web app with every module's screens (8b) |
 | 9 | More sources: Excel and supported PDF statements; authorised integrations research (Account Aggregator) | **Done**: Excel and text-PDF import; research concluded that Account Aggregator access needs a regulated entity, so file import stays ([INTEGRATIONS.md](docs/INTEGRATIONS.md)) |
 | 10 | LLM assistant with tool calling, answers grounded in backend calculations | **Done** (local model via Ollama; read-only tools; figures checked against tool results). Tested against a stand-in Ollama server; not yet with a real model |
-| 11 | PostgreSQL + Docker deployment, security review, release | Not started |
+| 11 | PostgreSQL + Docker deployment, security review, release | **In progress**: security review done (3 issues found and fixed, see SECURITY.md); Docker and PostgreSQL next |
 
 The FinSight specification was merged into this plan on 2026-11-11; see
 [docs/FINSIGHT_SPEC.md](docs/FINSIGHT_SPEC.md) for what was adopted, when, and

@@ -89,6 +89,41 @@ Only someone with access to your machine can do this.
 - **PostgreSQL is untested.** The schema and migrations are written to be
   portable, but have only been run on SQLite.
 
+## Security review (Phase 11, 2026-11-14)
+
+A review of the whole app as it stands at v0.9, done by reading the code and
+attacking it in tests, with the home-network mode (`serve --phone`) as the
+worst case: then anyone on the same Wi-Fi can reach FinSight.
+
+**Checked, no problem found:** password hashing and lockout; session tokens
+(hashed, expiring, revocable); cookie flags and the CSRF header; per-user
+isolation in the database layer; SQL (bound parameters only; the two
+f-strings in migration 0006 use a fixed list of table names); file uploads
+(size, row and page caps, `defusedxml`, zip-bomb check, content-based type
+detection, path-traversal guard for the web app and the inbox); the phone key
+(hashed, alerts only, revocable); TLS (strict verification tested with a
+real handshake); the assistant (read-only tools, local model only, no URL
+from users); Gmail (read-only scope, PKCE, state check); error messages (no
+stack traces); logging (no access log, no transaction text). `pip-audit` and
+`npm audit`: no known vulnerabilities.
+
+**Found and fixed:**
+
+| Problem | Risk | Fix |
+| --- | --- | --- |
+| With `--phone` and no account yet, anyone on the Wi-Fi could create the first account and own FinSight | High on a shared network | The first account can only be created from this computer (loopback); later ones follow `MONEYOS_ALLOW_SIGNUP` |
+| Request bodies were read in full before size checks, including on endpoints that check a key or password only afterwards | Memory exhaustion from the network | Every body is capped before it is read: 51 MB for statement uploads, 4 MB otherwise; bodies without a length are counted as they arrive (`api/protect.py`) |
+| Protective headers were sent only with web pages; API replies with financial data could be cached | Data left in browser or phone caches | `nosniff`, `no-referrer`, `DENY` framing on every reply, and `Cache-Control: no-store` on all API replies |
+
+Each fix has a test, and each test was checked by removing the fix
+(`tests/test_protect.py`).
+
+**Accepted, documented risks:** see Known limitations (no encryption at rest,
+plain-file Gmail token, in-memory lockout, heuristic SMS rules). One more:
+the category model is loaded with `joblib`, which can run code from the file;
+only FinSight's own `moneyos ml` command writes to `data/models`, so anyone
+who could plant a file there could already run code as you.
+
 ## Rules for integrations (Phase 9)
 
 Never collect credentials for other payment apps, scrape behind logins,

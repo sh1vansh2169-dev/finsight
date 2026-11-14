@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import ipaddress
+
 from datetime import datetime, timedelta
 from typing import Annotated
 
@@ -64,12 +66,26 @@ def _signed_in(user: User, token: str, use_cookie: bool, request: Request, respo
     return SignedIn(token=token, expires_at=expires, user=_out(user))
 
 
+def _from_this_computer(request: Request) -> bool:
+    host = request.client.host if request.client else ""
+    if host == "testclient":  # Starlette's in-process test client, which never comes from a network
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
 @router.post("/register", response_model=SignedIn, status_code=status.HTTP_201_CREATED)
 def register(body: Credentials, request: Request, response: Response, session: SystemSession,
              settings: Annotated[Settings, Depends(get_settings)]):
     """Create an account. The first account can always be created; later ones only if sign-up is allowed."""
-    if auth.user_count(session) and not settings.allow_signup:
+    existing = auth.user_count(session)
+    if existing and not settings.allow_signup:
         raise ConflictError("sign-up is closed on this FinSight; ask its owner to set MONEYOS_ALLOW_SIGNUP=true")
+    if not existing and not _from_this_computer(request):
+        # Otherwise, with `serve --phone`, anyone on the Wi-Fi could create the first account and own FinSight.
+        raise ConflictError("the first account must be created on this computer (http://127.0.0.1:8000)")
     auth.create_user(session, body.email, body.password)
     user, token = auth.sign_in(session, body.email, body.password)
     return _signed_in(user, token, body.use_cookie, request, response)

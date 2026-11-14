@@ -16,6 +16,7 @@ from moneyos.api import assistant as assistant_api
 from moneyos.api import phone as phone_api
 from moneyos.api import planning as planning_api
 from moneyos.api import webapp
+from moneyos.api.protect import Protect
 from moneyos.api.deps import current_user
 from moneyos.api.routes import router
 from moneyos.api.schemas import HealthOut
@@ -103,6 +104,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.inbox_watcher = None
     app.state.settings = settings
+    # Size limits and protective headers on every request (api/protect.py).
+    app.add_middleware(Protect)
     app.state.rules = load_rules(settings.rules_file)
     app.state.session_factory = init_db(settings.database_url, settings.data_mode)
 
